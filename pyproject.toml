@@ -6,6 +6,8 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "cairosvg>=2.8.2",
+    "ipykernel>=6.30.1",
+    "jupyter>=1.1.1",
     "minigrid>=3.0.0",
     "stormpy>=1.11.1",
     "stormvogel>=0.9.7",
