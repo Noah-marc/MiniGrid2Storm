@@ -2,12 +2,19 @@ from minigrid.envs.lavagap import LavaGapEnv
 from minigrid.envs.dynamicobstacles import DynamicObstaclesEnv
 from stormvogel import bird, show, ModelType
 from minigrid.manual_control import ManualControl
+from minigrid.core.actions import Actions
+
+from probabilistic_minigrids import ProbabilisticEnvWrapper
 
 env = LavaGapEnv(5, render_mode="human")
 env.reset()
 init_dir = env.agent_dir
 init_pos =  tuple(map(int, env.agent_pos))
 init = (init_pos, init_dir)
+
+used_actions = [Actions.forward, Actions.left, Actions.right]
+test_wrapper = ProbabilisticEnvWrapper(LavaGapEnv(size=9, render_mode="human"), used_actions=used_actions)
+
 
 
 def labels(s: bird.State):
@@ -63,16 +70,20 @@ def test_delta():
 
 
 def main():
-    model = bird.build_bird(
-                    delta=delta,
-                    init=init, 
-                    labels=labels, 
-                    available_actions=available_actions, 
-                    modeltype=ModelType.MDP
-                    )
-    print(len(model.states))
+    # model = bird.build_bird(
+    #                 delta=delta,
+    #                 init=init, 
+    #                 labels=labels, 
+    #                 available_actions=available_actions, 
+    #                 modeltype=ModelType.MDP
+    #                 )
+    # print(len(model.states))
 
-    
+
+    manual_control = ManualControl(test_wrapper)
+    manual_control.start()
+
+
     # visual = show(model, show_editor=True)
     # test_delta()
     # model.states
