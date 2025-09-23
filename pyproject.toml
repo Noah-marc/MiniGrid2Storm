@@ -1,0 +1,12 @@
+[project]
+name = "minigrid2storm"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "cairosvg>=2.8.2",
+    "minigrid>=3.0.0",
+    "stormpy>=1.11.1",
+    "stormvogel>=0.9.7",
+]
