@@ -48,7 +48,7 @@ def delta(s: bird.State, a: bird.Action):
 
     result = []
     action = getattr(Actions, a[0])
-    probs = prob_distribution[action]
+    probs = prob_env.prob_distribution[action]
 
     #First we store the results for each action
     result_right = (s[0], (s[1] + 1) % 4)
