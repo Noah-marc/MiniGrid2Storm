@@ -12,11 +12,6 @@ init_dir = env.agent_dir
 init_pos =  tuple(map(int, env.agent_pos))
 init = (init_pos, init_dir)
 
-used_actions = [Actions.forward, Actions.left, Actions.right]
-test_wrapper = ProbabilisticEnvWrapper(LavaGapEnv(size=9, render_mode="human"), used_actions=used_actions)
-
-
-
 def labels(s: bird.State):
     cell_type = "None"
     cell = env.grid.get(s[0][0], s[0][1])
@@ -31,7 +26,7 @@ def delta(s: bird.State, a: bird.Action):
     curr_state = env.grid.get(s[0][0], s[0][1])
     if curr_state is not None and (curr_state.type == "lava" or curr_state.type == "goal"): 
         return [(1, s)]
-    
+
     if a[0] == "right": 
         result = (s[0], (s[1] + 1) % 4)
         return [(1, result)]
@@ -45,22 +40,18 @@ def delta(s: bird.State, a: bird.Action):
         env.agent_pos = s[0]
         env.agent_dir = s[1]
         fwd_pos = env.front_pos
-        # print(f"forward pos in delta: {fwd_pos}")
         fwd_cell = env.grid.get(fwd_pos[0], fwd_pos[1])
         result = (tuple(map(int, fwd_pos)), s[1])
-        # print(f"result in delta: {result}")
 
         if fwd_cell is None or fwd_cell.can_overlap():
-            # print("I get here 1 ")
             return [(1,result)]
         if fwd_cell is not None and (fwd_cell.type == "goal" or fwd_cell.type == "lava"):
-            # print("I get here 2" )
             return [(1,result)]
+        return [(1, s)]
 
 
 
 def test_delta(): 
-
     res1 = delta(init, "forward")
     print(f"delta (action:forward): {res1}")
     res2 = delta(init, "right")
@@ -70,6 +61,7 @@ def test_delta():
 
 
 def main():
+    pass
     # model = bird.build_bird(
     #                 delta=delta,
     #                 init=init, 
