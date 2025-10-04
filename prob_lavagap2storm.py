@@ -7,14 +7,13 @@ from minigrid.envs.lavagap import LavaGapEnv
 from stormvogel import bird, show, ModelType
 from minigrid.manual_control import ManualControl
 from minigrid.core.actions import Actions
+from minigrid.minigrid_env import MiniGridEnv
+import copy
 
 from probabilistic_minigrids import ProbabilisticEnvWrapper
 
-
-env = LavaGapEnv(5, render_mode="human")
+env = LavaGapEnv(5, render_mode=None)
 used_actions = [Actions.forward, Actions.left, Actions.right]
-#we store the indices of the actions to be able to use them later. Format is {action: index}
-action_indices = {action: i for i, action in enumerate(used_actions)}
 prob_distribution = {Actions.forward : [0.8, 0.1, 0.1], 
                      Actions.left : [0.1, 0.8, 0.1], 
                      Actions.right : [0.1, 0.1, 0.8]}
@@ -22,86 +21,69 @@ prob_env = ProbabilisticEnvWrapper(env, used_actions=used_actions, prob_distribu
 prob_env.reset()
 init_dir = prob_env.agent_dir
 init_pos =  tuple(map(int, prob_env.agent_pos))
-init = (init_pos, init_dir)
 
+#We store states as hashes of envs using the MiniGridEnv.hash function, which returns the same hashes for deepcopies of same envs. When storing states as envs, the bird api will use the __hash__ and __eq__ functions of the env, which do not have the desired properties for deepcopies.
+init = prob_env.env.hash() 
+#We use the dict to get an env from a hash in the delta function. This way, we can simulate steps by using the defined step() functions. 
+visited_envs = {init: prob_env.env}
 
-def labels(s: bird.State):
+def labels(s: str):
+    """
+    In init we define the inital state of the agent as the env of the probablisitc wrapper. 
+    So while theoritcially the type of s would be bird.State, it is actually a MiniGridEnv.
+    """
+    curr_env = visited_envs[s]
     cell_type = "None"
-    cell = prob_env.grid.get(s[0][0], s[0][1])
+    cell = curr_env.grid.get(curr_env.agent_pos[0], curr_env.agent_pos[1])
     if cell is not None: 
         cell_type = cell.type
-    return f"Position: {s[0]}, Direction: {s[1]}, Cell Type: {cell_type}"
+    return f"Position: {(int(curr_env.agent_pos[0]),int(curr_env.agent_pos[1]))}, Direction: {curr_env.agent_dir}, Cell Type: {cell_type}"
 
-def available_actions(s: bird.State):
+def available_actions(s: str):
     """
     Up until now it is assumed that all actions are always available. 
     TODO: Change this if needed.
     """
-    return [[action.name] for action in used_actions] # We need to reformat for bird api
+    # We reformat the used_action list to the format expected by the bird api
+    return [[action.name] for action in used_actions]
 
-def delta(s: bird.State, a: bird.Action):
-    """Up until know it is assumed that the actions are only forward, left, right. Change this later. if needed"""  
-    # Use consistent environment - prob_env throughout
-    curr_state = prob_env.grid.get(s[0][0], s[0][1])
+def delta(s: str, a: bird.Action):
+    """
+    In init we define the inital state of the agent as the env of the probablisitc wrapper. 
+    So while theoritcially the type of s would be bird.State, it is actually a MiniGridEnv.
+    """
+    curr_env = visited_envs[s]
+    curr_state = curr_env.grid.get(curr_env.agent_pos[0], curr_env.agent_pos[1])
     if curr_state is not None and (curr_state.type == "lava" or curr_state.type == "goal"): 
         return [(1, s)]
-
-    result = []
-    action = getattr(Actions, a[0])
-    probs = prob_env.prob_distribution[action]
-
-    #First we store the results for each action
-    result_right = (s[0], (s[1] + 1) % 4)
-    result.append((probs[action_indices[Actions.right]], result_right))
-    if s[1]-1 < 0: 
-        result_left = (s[0], s[1]-1 + 4)
-    else: 
-        result_left = (s[0], s[1]-1)
-    result.append((probs[action_indices[Actions.left]], result_left))
-
-    # Handle forward movement with proper collision detection
-    prob_env.agent_pos = s[0]
-    prob_env.agent_dir = s[1]
-    fwd_pos = prob_env.front_pos
-    fwd_cell = prob_env.grid.get(fwd_pos[0], fwd_pos[1])
     
-    # Apply the same logic as the original version
-    if fwd_cell is None or fwd_cell.can_overlap():
-        result_forward = (tuple(map(int, fwd_pos)), s[1])
-        result.append((probs[action_indices[Actions.forward]], result_forward))
-    elif fwd_cell is not None and (fwd_cell.type == "goal" or fwd_cell.type == "lava"):
-        result_forward = (tuple(map(int, fwd_pos)), s[1])
-        result.append((probs[action_indices[Actions.forward]], result_forward))
-    else:
-        # Can't move forward (wall/obstacle), stay in same position
-        result.append((probs[action_indices[Actions.forward]], s))
+    result = []
+    given_action = getattr(Actions, a[0])
+    probs = prob_env.prob_distribution[given_action]
+    for action,i in enumerate(used_actions): 
+        env_copy = copy.deepcopy(curr_env)
+        env_copy.step(action)
+        hash = env_copy.hash()
+        visited_envs[hash] = env_copy
+        result.append((probs[i], hash))
     return result
 
-def test_delta(): 
-    res1 = delta(init, ["forward"])
-    print(f"delta (action:forward): {res1}")
-    res2 = delta(init, ["right"])
-    print(f"delta (action:right): {res2}")
-    res3 = delta(init, ["left"])
-    print(f"delta (action:left): {res3}")
-
-
 def main():
-    pass
-    # model = bird.build_bird(
-    #                 delta=delta,
-    #                 init=init, 
-    #                 labels=labels, 
-    #                 available_actions=available_actions, 
-    #                 modeltype=ModelType.MDP
-    #                 )
+    model = bird.build_bird(
+                    delta=delta,
+                    init=init, 
+                    labels=labels, 
+                    available_actions=available_actions, 
+                    modeltype=ModelType.MDP
+                    )
+    
     # print(len(model.states))
     # visual = show(model, show_editor=True)
 
     # test_delta()
     # model.states
-    manual_control = ManualControl(prob_env)
-    manual_control.start()
+    # manual_control = ManualControl(prob_env)
+    # manual_control.start()
 
 
 
