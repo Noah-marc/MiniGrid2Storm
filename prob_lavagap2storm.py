@@ -117,7 +117,10 @@ def convert_to_probabilistic_storm(env:MiniGridEnv, used_actions:list[Actions], 
     return model
     
 
-def main():
+def load_and_convert_all_envs(): 
+    """This function loads all environments from environments.yaml, converts them to probabilistic storm models, and logs the results.
+    
+    This function should normally be your code in main, but in order to test other functions, I stored it in a separate function for now."""
     env_configs = load_env_configs()
     failed_envs = []
     successful_envs = []
@@ -146,16 +149,19 @@ def main():
 
 
 
-    # convert_to_probabilistic_storm()
+def main():
+
+    load_and_convert_all_envs()
     
     
     # print(len(model.states))
     # visual = show(model, show_editor=True)
 
-    # test_delta()
     # model.states
-    # manual_control = ManualControl(prob_env)
-    # manual_control.start()
+
+    # convert_to_probabilistic_storm()
+    
+    
 
 
 

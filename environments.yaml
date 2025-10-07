@@ -53,21 +53,22 @@ environments:
       pickup: [0.1, 0.1, 0.1, 0.6, 0.1]
       toggle: [0.1, 0.1, 0.1, 0.1, 0.6]
 
-  # Probably needs some extra handling for dynamic obstacles in storm, as for
-  # every state action pair the result also depends on the possible position of the obstacles
-  # Currently has to many states when converting to storm
-  # - name: DynamicObstaclesEnv
-  #   module: minigrid.envs.dynamicobstacles
-  #   class: DynamicObstaclesEnv
-  #   class_params:
-  #     size: 8
-  #     n_obstacles: 3
-  #     render_mode: null
-  #   actions: [forward, left, right]
-  #   probabilities:
-  #     forward: [0.8, 0.1, 0.1]
-  #     left: [0.1, 0.8, 0.1]
-  #     right: [0.1, 0.1, 0.8]
+  
+  #PROBLEM: Not the full mdp that is loaded! Sampling the same action twice returns different grids. 
+  # The obstacles are placed somewhat randomly (in a 3x3 area and the area changes deterministically)
+  # Hence for full MDP one would need to consider all possible placements of the obstacles.
+  - name: DynamicObstaclesEnv
+    module: minigrid.envs.dynamicobstacles
+    class: DynamicObstaclesEnv
+    class_params:
+      size: 5
+      n_obstacles: 2
+      render_mode: null
+    actions: [forward, left, right]
+    probabilities:
+      forward: [0.8, 0.1, 0.1]
+      left: [0.1, 0.8, 0.1]
+      right: [0.1, 0.1, 0.8]
 
   # tricky because of extra string input
   - name: FetchEnv
@@ -156,20 +157,21 @@ environments:
       right: [0.2, 0.2, 0.6]
 
 
-  # Currently has to many states when converting to storm ??
   # # tricky because of extra string input
-  # - name: LockedRoomEnv
-  #   module: minigrid.envs.lockedroom
-  #   class: LockedRoomEnv
-  #   class_params:
-  #     render_mode: null
-  #   actions: [forward, left, right, pickup, toggle]
-  #   probabilities:
-  #     forward: [0.6, 0.1, 0.1, 0.1, 0.1]
-  #     left: [0.1, 0.6, 0.1, 0.1, 0.1]
-  #     right: [0.1, 0.1, 0.6, 0.1, 0.1]
-  #     pickup: [0.1, 0.1, 0.1, 0.6, 0.1]
-  #     toggle: [0.1, 0.1, 0.1, 0.1, 0.6]
+  # Quite large state space (in fact 5312 for the probabilistic version)
+  - name: LockedRoomEnv
+    module: minigrid.envs.lockedroom
+    class: LockedRoomEnv
+    class_params:
+      render_mode: null
+      size: 11
+    actions: [forward, left, right, pickup, toggle]
+    probabilities:
+      forward: [0.6, 0.1, 0.1, 0.1, 0.1]
+      left: [0.1, 0.6, 0.1, 0.1, 0.1]
+      right: [0.1, 0.1, 0.6, 0.1, 0.1]
+      pickup: [0.1, 0.1, 0.1, 0.6, 0.1]
+      toggle: [0.1, 0.1, 0.1, 0.1, 0.6]
 
   # interesting but tricky as it uses an agent vision field. Also agent needs to remember the first object basically.
   - name: MemoryEnv
