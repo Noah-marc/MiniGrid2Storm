@@ -19,7 +19,8 @@ class ProbabilisticEnvWrapper:
             self,
             env:MiniGridEnv,
             used_actions: list[Actions] = None,
-            prob_distribution: dict[Actions,list[float]]= None):
+            prob_distribution: dict[Actions,list[float]]= None
+            ):
         
         if used_actions is not None and prob_distribution is not None:
             assert len(used_actions) == len(prob_distribution), "Length of used_actions must match length of prob_distribution"

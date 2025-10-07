@@ -1,0 +1,267 @@
+# MiniGrid Environment Configurations
+environments:
+  - name: BlockedUnlockPickupEnv
+    module: minigrid.envs.blockedunlockpickup
+    class: BlockedUnlockPickupEnv
+    class_params:
+      render_mode: null
+    actions: [forward, left, right, pickup, toggle]
+    probabilities:
+      forward: [0.6, 0.1, 0.1, 0.1, 0.1]
+      left: [0.1, 0.6, 0.1, 0.1, 0.1]
+      right: [0.1, 0.1, 0.6, 0.1, 0.1]
+      pickup: [0.1, 0.1, 0.1, 0.6, 0.1]
+      toggle: [0.1, 0.1, 0.1, 0.1, 0.6]
+
+  - name: CrossingEnv
+    module: minigrid.envs.crossing
+    class: CrossingEnv
+    class_params:
+      size: 9
+      num_crossings: 1
+      render_mode: null
+    actions: [forward, left, right]
+    probabilities:
+      forward: [0.8, 0.1, 0.1]
+      left: [0.1, 0.8, 0.1]
+      right: [0.1, 0.1, 0.8]
+
+  - name: DistShiftEnv
+    module: minigrid.envs.distshift
+    class: DistShiftEnv
+    class_params:
+      width: 9
+      height: 7
+      render_mode: null
+    actions: [forward, left, right]
+    probabilities:
+      forward: [0.8, 0.1, 0.1]
+      left: [0.1, 0.8, 0.1]
+      right: [0.1, 0.1, 0.8]
+
+  - name: DoorKeyEnv
+    module: minigrid.envs.doorkey
+    class: DoorKeyEnv
+    class_params:
+      size: 8
+      render_mode: null
+    actions: [forward, left, right, pickup, toggle]
+    probabilities:
+      forward: [0.6, 0.1, 0.1, 0.1, 0.1]
+      left: [0.1, 0.6, 0.1, 0.1, 0.1]
+      right: [0.1, 0.1, 0.6, 0.1, 0.1]
+      pickup: [0.1, 0.1, 0.1, 0.6, 0.1]
+      toggle: [0.1, 0.1, 0.1, 0.1, 0.6]
+
+  # Probably needs some extra handling for dynamic obstacles in storm, as for
+  # every state action pair the result also depends on the possible position of the obstacles
+  # Currently has to many states when converting to storm
+  # - name: DynamicObstaclesEnv
+  #   module: minigrid.envs.dynamicobstacles
+  #   class: DynamicObstaclesEnv
+  #   class_params:
+  #     size: 8
+  #     n_obstacles: 3
+  #     render_mode: null
+  #   actions: [forward, left, right]
+  #   probabilities:
+  #     forward: [0.8, 0.1, 0.1]
+  #     left: [0.1, 0.8, 0.1]
+  #     right: [0.1, 0.1, 0.8]
+
+  # tricky because of extra string input
+  - name: FetchEnv
+    module: minigrid.envs.fetch
+    class: FetchEnv
+    class_params:
+      render_mode: null
+    actions: [forward, left, right, pickup]
+    probabilities:
+      forward: [0.7, 0.1, 0.1, 0.1]
+      left: [0.1, 0.7, 0.1, 0.1]
+      right: [0.1, 0.1, 0.7, 0.1]
+      pickup: [0.1, 0.1, 0.1, 0.7]
+
+  - name: FourRoomsEnv
+    module: minigrid.envs.fourrooms
+    class: FourRoomsEnv
+    class_params:
+      render_mode: null
+    actions: [forward, left, right]
+    probabilities:
+      forward: [0.8, 0.1, 0.1]
+      left: [0.1, 0.8, 0.1]
+      right: [0.1, 0.1, 0.8]
+
+  #tricky because of extra string input
+  - name: GoToDoorEnv
+    module: minigrid.envs.gotodoor
+    class: GoToDoorEnv
+    class_params:
+      render_mode: null
+    actions: [forward, left, right, done]
+    probabilities:
+      forward: [0.7, 0.1, 0.1, 0.1]
+      left: [0.1, 0.7, 0.1, 0.1]
+      right: [0.1, 0.1, 0.7, 0.1]
+      done: [0.1, 0.1, 0.1, 0.7]
+
+  #tricky because of extra string input
+  - name: GoToObjectEnv
+    module: minigrid.envs.gotoobject
+    class: GoToObjectEnv
+    class_params:
+      render_mode: null
+    actions: [forward, left, right, done]
+    probabilities:
+      forward: [0.7, 0.1, 0.1, 0.1]
+      left: [0.1, 0.7, 0.1, 0.1]
+      right: [0.1, 0.1, 0.7, 0.1]
+      done: [0.1, 0.1, 0.1, 0.7]
+
+  - name: KeyCorridorEnv
+    module: minigrid.envs.keycorridor
+    class: KeyCorridorEnv
+    class_params:
+      render_mode: null
+    actions: [forward, left, right, pickup]
+    probabilities:
+      forward: [0.7, 0.1, 0.1, 0.1]
+      left: [0.1, 0.7, 0.1, 0.1]
+      right: [0.1, 0.1, 0.7, 0.1]
+      pickup: [0.1, 0.1, 0.1, 0.7]
+
+  - name: lavagap_small
+    module: minigrid.envs.lavagap
+    class: LavaGapEnv
+    class_params:
+      size: 5
+      render_mode: null
+    actions: [forward, left, right]
+    probabilities:
+      forward: [0.8, 0.1, 0.1]  # High success rate
+      left: [0.1, 0.8, 0.1]
+      right: [0.1, 0.1, 0.8]
+
+  - name: lavagap_noisy
+    module: minigrid.envs.lavagap
+    class: LavaGapEnv
+    class_params:
+      size: 5
+      render_mode: null
+    actions: [forward, left, right]
+    probabilities:
+      forward: [0.6, 0.2, 0.2]  # More noise
+      left: [0.2, 0.6, 0.2]
+      right: [0.2, 0.2, 0.6]
+
+
+  # Currently has to many states when converting to storm ??
+  # # tricky because of extra string input
+  # - name: LockedRoomEnv
+  #   module: minigrid.envs.lockedroom
+  #   class: LockedRoomEnv
+  #   class_params:
+  #     render_mode: null
+  #   actions: [forward, left, right, pickup, toggle]
+  #   probabilities:
+  #     forward: [0.6, 0.1, 0.1, 0.1, 0.1]
+  #     left: [0.1, 0.6, 0.1, 0.1, 0.1]
+  #     right: [0.1, 0.1, 0.6, 0.1, 0.1]
+  #     pickup: [0.1, 0.1, 0.1, 0.6, 0.1]
+  #     toggle: [0.1, 0.1, 0.1, 0.1, 0.6]
+
+  # interesting but tricky as it uses an agent vision field. Also agent needs to remember the first object basically.
+  - name: MemoryEnv
+    module: minigrid.envs.memory
+    class: MemoryEnv
+    class_params:
+      size: 9  # Must be odd for height % 2 == 1 requirement
+      render_mode: null
+    actions: [forward, left, right, pickup, toggle]
+    probabilities:
+      forward: [0.6, 0.1, 0.1, 0.1, 0.1]
+      left: [0.1, 0.6, 0.1, 0.1, 0.1]
+      right: [0.1, 0.1, 0.6, 0.1, 0.1]
+      pickup: [0.1, 0.1, 0.1, 0.6, 0.1]
+      toggle: [0.1, 0.1, 0.1, 0.1, 0.6]
+
+  - name: MultiRoomEnv
+    module: minigrid.envs.multiroom
+    class: MultiRoomEnv
+    class_params:
+      minNumRooms: 2
+      maxNumRooms: 4
+      render_mode: null
+    actions: [forward, left, right]
+    probabilities:
+      forward: [0.8, 0.1, 0.1]
+      left: [0.1, 0.8, 0.1]
+      right: [0.1, 0.1, 0.8]
+
+  # COMMENTED OUT: Too many states (>10000)
+  # - name: ObstructedMazeFull
+  #   module: minigrid.envs.obstructedmaze
+  #   class: ObstructedMaze_Full
+  #   class_params:
+  #     render_mode: null
+  #   actions: [forward, left, right, pickup, toggle]
+  #   probabilities:
+  #     forward: [0.6, 0.1, 0.1, 0.1, 0.1]
+  #     left: [0.1, 0.6, 0.1, 0.1, 0.1]
+  #     right: [0.1, 0.1, 0.6, 0.1, 0.1]
+  #     pickup: [0.1, 0.1, 0.1, 0.6, 0.1]
+  #     toggle: [0.1, 0.1, 0.1, 0.1, 0.6]
+
+
+  # COMMENTED OUT: Too many states (>10000) + tricky because of extra string input
+  # - name: PutNearEnv
+  #   module: minigrid.envs.putnear
+  #   class: PutNearEnv
+  #   class_params:
+  #     render_mode: null
+  #   actions: [forward, left, right, pickup, drop]
+  #   probabilities:
+  #     forward: [0.6, 0.1, 0.1, 0.1, 0.1]
+  #     left: [0.1, 0.6, 0.1, 0.1, 0.1]
+  #     right: [0.1, 0.1, 0.6, 0.1, 0.1]
+  #     pickup: [0.1, 0.1, 0.1, 0.6, 0.1]
+  #     drop: [0.1, 0.1, 0.1, 0.1, 0.6]
+
+  - name: RedBlueDoorEnv
+    module: minigrid.envs.redbluedoors
+    class: RedBlueDoorEnv
+    class_params:
+      render_mode: null
+    actions: [forward, left, right, toggle]
+    probabilities:
+      forward: [0.7, 0.1, 0.1, 0.1]
+      left: [0.1, 0.7, 0.1, 0.1]
+      right: [0.1, 0.1, 0.7, 0.1]
+      toggle: [0.1, 0.1, 0.1, 0.7]
+
+  - name: UnlockEnv
+    module: minigrid.envs.unlock
+    class: UnlockEnv
+    class_params:
+      render_mode: null
+    actions: [forward, left, right, toggle]
+    probabilities:
+      forward: [0.7, 0.1, 0.1, 0.1]
+      left: [0.1, 0.7, 0.1, 0.1]
+      right: [0.1, 0.1, 0.7, 0.1]
+      toggle: [0.1, 0.1, 0.1, 0.7]
+
+  - name: UnlockPickupEnv
+    module: minigrid.envs.unlockpickup
+    class: UnlockPickupEnv
+    class_params:
+      render_mode: null
+    actions: [forward, left, right, pickup, toggle]
+    probabilities:
+      forward: [0.6, 0.1, 0.1, 0.1, 0.1]
+      left: [0.1, 0.6, 0.1, 0.1, 0.1]
+      right: [0.1, 0.1, 0.6, 0.1, 0.1]
+      pickup: [0.1, 0.1, 0.1, 0.6, 0.1]
+      toggle: [0.1, 0.1, 0.1, 0.1, 0.6]
+
