@@ -69,14 +69,23 @@ def convert_to_probabilistic_storm(env:MiniGridEnv, used_actions:list[Actions], 
         cell_type = "None"
         cell = curr_env.grid.get(curr_env.agent_pos[0], curr_env.agent_pos[1])
         if cell is not None: 
-            cell_type = cell.type
-        label = f"Position: {(int(curr_env.agent_pos[0]),int(curr_env.agent_pos[1]))}, Direction: {curr_env.agent_dir}, Cell Type: {cell_type}"
-        if Actions.pickup in used_actions:
-            carrying = "None"
-            if curr_env.carrying is not None:
-                carrying = curr_env.carrying.type
-            label += f", Carrying: {carrying}"
-        return label
+            cell_type = cell.type     
+        return cell_type
+
+
+        # the code below gives actual informative labels about the rest of the mdp, such as position and dircetion. However, when model checking, we need only the labels of the sell as they constitute the safety relavent parts of the mdp. As far as I know, stormvogel/stormpy does not allow for patttern matching on the label in the property string. 
+        # curr_env = visited_envs[s]
+        # cell_type = "None"
+        # cell = curr_env.grid.get(curr_env.agent_pos[0], curr_env.agent_pos[1])
+        # if cell is not None: 
+        #     cell_type = cell.type
+        # label = f"Position: {(int(curr_env.agent_pos[0]),int(curr_env.agent_pos[1]))}, Direction: {curr_env.agent_dir}, Cell Type: {cell_type}"
+        # if Actions.pickup in used_actions:
+        #     carrying = "None"
+        #     if curr_env.carrying is not None:
+        #         carrying = curr_env.carrying.type
+        #     label += f", Carrying: {carrying}"
+        # return label
 
     def available_actions(s: str):
         """
@@ -114,13 +123,17 @@ def convert_to_probabilistic_storm(env:MiniGridEnv, used_actions:list[Actions], 
                     available_actions=available_actions, 
                     modeltype=ModelType.MDP
                     )
-    return model
+    return model, visited_envs
     
 
 def load_and_convert_all_envs(): 
     """This function loads all environments from environments.yaml, converts them to probabilistic storm models, and logs the results.
+
+    This is a good function for testing whether loading all envs works. Of course, on should inspect the ouput models further to ensure correctness.
     
-    This function should normally be your code in main, but in order to test other functions, I stored it in a separate function for now."""
+    This function should normally be your code in main, but in order to test other functions, I stored it in a separate function for now.
+    
+    """
     env_configs = load_env_configs()
     failed_envs = []
     successful_envs = []
