@@ -39,6 +39,19 @@ environments:
       left: [0.1, 0.8, 0.1]
       right: [0.1, 0.1, 0.8]
 
+  - name: DistShiftEnvSmall
+    module: minigrid.envs.distshift
+    class: DistShiftEnv
+    class_params:
+      width: 8
+      height: 6
+      render_mode: null
+    actions: [forward, left, right]
+    probabilities:
+      forward: [0.8, 0.1, 0.1]
+      left: [0.1, 0.8, 0.1]
+      right: [0.1, 0.1, 0.8]
+
   - name: DoorKeyEnv
     module: minigrid.envs.doorkey
     class: DoorKeyEnv
