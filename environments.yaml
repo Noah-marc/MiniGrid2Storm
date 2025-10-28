@@ -70,18 +70,18 @@ environments:
   #PROBLEM: Not the full mdp that is loaded! Sampling the same action twice returns different grids. 
   # The obstacles are placed somewhat randomly (in a 3x3 area and the area changes deterministically)
   # Hence for full MDP one would need to consider all possible placements of the obstacles.
-  - name: DynamicObstaclesEnv
-    module: minigrid.envs.dynamicobstacles
-    class: DynamicObstaclesEnv
-    class_params:
-      size: 5
-      n_obstacles: 2
-      render_mode: null
-    actions: [forward, left, right]
-    probabilities:
-      forward: [0.8, 0.1, 0.1]
-      left: [0.1, 0.8, 0.1]
-      right: [0.1, 0.1, 0.8]
+  # - name: DynamicObstaclesEnv
+  #   module: minigrid.envs.dynamicobstacles
+  #   class: DynamicObstaclesEnv
+  #   class_params:
+  #     size: 5
+  #     n_obstacles: 2
+  #     render_mode: null
+  #   actions: [forward, left, right]
+  #   probabilities:
+  #     forward: [0.8, 0.1, 0.1]
+  #     left: [0.1, 0.8, 0.1]
+  #     right: [0.1, 0.1, 0.8]
 
   # tricky because of extra string input
   - name: FetchEnv
