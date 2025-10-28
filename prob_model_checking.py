@@ -1,6 +1,8 @@
 from stormvogel.stormpy_utils.model_checking import model_checking
 from prob_minigrid2storm import convert_to_probabilistic_storm, load_env_configs, process_config
 from stormvogel.result import Result
+from stormvogel.extensions.visual_algos import policy_iteration
+
 
 configs = load_env_configs()
 #contains all the information about the environments that is needed for making a probabilistic env wrapper and converting to storm model.
@@ -11,9 +13,6 @@ crossing_env_storm, env_mapping = convert_to_probabilistic_storm(crossing_env_in
 distshift_env_info= process_config(configs[2])
 distshift_env_instance= distshift_env_info['env_class'](**distshift_env_info['env_params'])
 distshift_env_storm, distshift_env_mapping = convert_to_probabilistic_storm(distshift_env_instance, distshift_env_info['used_actions'], distshift_env_info['prob_distribution'])
-# Test safety properties
-
-
 
 def test_model_checking(env_storm, env_name): 
     print("=== Model Info ===")
@@ -56,5 +55,21 @@ def test_model_checking(env_storm, env_name):
     # print(result.values)
 
 
+def test_policy_iteration(): 
+    # Define what we want to optimize for
+    goal_maximization = "P=? [F \"goal\"]"  # Maximize probability of reaching goal
+    
+    print(f"Running policy iteration to optimize: {goal_maximization}")
+    print(f"This will find the policy that maximizes the chance of reaching the goal")
+    
+    result = policy_iteration(distshift_env_storm, prop=goal_maximization, visualize=False)
+    print(f"Optimization result: {result.values}")
+    
+    # You could also try different objectives:
+    # safety_maximization = "Pmax=? [G !\"lava\"]"  # Maximize probability of never hitting lava
+    # lava_minimization = "Pmin=? [F \"lava\"]"     # Minimize probability of hitting lava
+
+
 if __name__ == "__main__":
-    test_model_checking(crossing_env_storm, "Probabilistic CrossingEnv")
+    # test_model_checking(crossing_env_storm, "Probabilistic CrossingEnv")
+    test_policy_iteration()
