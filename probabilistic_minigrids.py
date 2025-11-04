@@ -3,7 +3,11 @@ from gymnasium.core import ActType
 from minigrid.core.actions import Actions
 from minigrid.core.world_object import Lava
 from stormvogel import bird, ModelType
+from stormvogel.stormpy_utils.mapping import stormvogel_to_stormpy
+import stormpy
 import copy
+
+
 
 
 class ProbabilisticEnvWrapper:
@@ -36,17 +40,26 @@ class ProbabilisticEnvWrapper:
         self.used_actions = used_actions if used_actions is not None else [action for action in Actions]
         self.prob_distribution = prob_distribution if prob_distribution is not None else {action: [1/len(self.used_actions) for _ in self.used_actions] for action in self.used_actions}
         
+        #keep track of added lava positions. Used in reset() to restore the lava, so that it stays at the same positions. 
+        self.lava_pos:tuple[int,int] | None = None
+        #reset initial env such that env.agent_pos and other variables are initialized
+        self.env.reset() 
+        
     def step(self, action: ActType):
         actual_action = self.env.np_random.choice(self.used_actions, p=self.prob_distribution[action])
         return self.env.step(actual_action)
+    
+    def reset(self ): 
+        self.env.reset()
+        #restore lava if it was added before
+        if self.lava_pos is not None:
+            self.env.grid.set(self.lava_pos[0], self.lava_pos[1], Lava())
 
     def __getattr__(self, name):
         # Delegate all other attributes/methods to the wrapped env
         return getattr(self.env, name) 
 
     def convert_to_probabilistic_storm(self):
-        self.reset()
-
         #We store states as hashes of envs using the MiniGridEnv.hash function, which returns the same hashes for deepcopies of same envs. When storing states as envs, the bird api will use the __hash__ and __eq__ functions of the env, which do not have the desired properties for deepcopies.
         init = self.env.hash() 
         #We use the dict to get an env from a hash in the delta function. This way, we can simulate steps by using the defined step() functions. 
@@ -101,3 +114,87 @@ class ProbabilisticEnvWrapper:
                         modeltype=ModelType.MDP
                         )
         return model, visited_envs
+
+    def add_lava(self, pos: tuple = None) -> tuple[int,int] | None:
+        """
+        If pos is provided, places a lava hazard at the specified position. In that case, it does not check whether all states remain reachable.
+        Otherwise, adds a single lava hazard to environments that don't already have them.
+        Places it randomly in a safe location that doesn't block the environment and all states stay reachable.
+
+        """
+        
+        # Check if there are already Lava objects in the grid
+        if any(isinstance(obj, Lava) for obj in self.env.grid.grid if obj is not None):
+            print("Environment already contains lava hazards.")
+            return None
+        
+        if pos is not None:
+            self.env.grid.set(pos[0], pos[1], Lava())
+            print(f"Placed lava at specified position ({pos[0]}, {pos[1]})")
+            return pos
+        
+        # Get all valid positions for lava placement
+        valid_positions = []
+        
+        # Check all positions in the grid (excluding outer walls)
+        for x in range(1, self.env.grid.width - 1):
+            for y in range(1, self.env.grid.height - 1):
+                if self._is_valid_lava_position(x, y):
+                    valid_positions.append((x, y))
+        
+        if not valid_positions:
+            print("No valid positions found for lava placement.")
+            return None
+        
+        # Randomly choose one position
+        chosen_pos = self.env.np_random.choice(len(valid_positions))
+        x, y = valid_positions[chosen_pos]
+
+        reachable_states_before = self.get_reachable_states()
+        # Place the lava
+        self.env.grid.set(x, y, Lava())
+        reachable_states_after = self.get_reachable_states()
+
+        if reachable_states_before != reachable_states_after:
+            self.env.grid.set(x, y, None)
+            print(f"Lava placement at ({x}, {y}) blocked goal reachability. Lava not placed.")
+            print(f"Reachable states before: {reachable_states_before}")
+            print(f"Reachable states after: {reachable_states_after}")
+            return None
+        print(f"Placed lava at position ({x}, {y})")
+        
+        return (x,y)
+
+    
+    
+    def _is_valid_lava_position(self, x, y):
+        """Check if a position is safe for placing lava (won't make environment unsolvable)."""
+        # Position must be empty
+        if self.env.grid.get(x, y) is not None:
+            return False
+        
+        # Don't place at agent starting position
+        if (x, y) == tuple(self.env.agent_pos):
+            return False
+        
+        # Don't place adjacent to agent (safety buffer)
+        agent_x, agent_y = self.env.agent_pos
+        if abs(x - agent_x) <= 1 and abs(y - agent_y) <= 1:
+            return False
+        
+        return True
+    
+    def get_reachable_states(self, ):
+        """
+        Returns the set of reachable states from the initial state for the current state of the class. It does not allow for any customization for now and is used mostly for in the lava function.
+        """
+        stormvogel_model, _ = self.convert_to_probabilistic_storm()
+        stormpy_model = stormvogel_to_stormpy(stormvogel_model)
+
+        initial_states_bitvector = stormpy.BitVector(stormpy_model.nr_states, stormpy_model.initial_states)        
+        # Create constraint_states BitVector (it is full, as appearently stormpy interprets True as no constraints)
+        constraint_states_bitvector = stormpy.BitVector(stormpy_model.nr_states, True) 
+        # Target states specify absorbing states. An absorbing state means a state from which on it does not further explore
+        target_states_bitvector = stormpy.BitVector(stormpy_model.nr_states, False)
+
+        return stormpy.get_reachable_states(stormpy_model, initial_states_bitvector, constraint_states_bitvector, target_states_bitvector) 
