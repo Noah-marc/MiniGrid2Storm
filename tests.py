@@ -1,9 +1,20 @@
+
 from stormvogel.stormpy_utils.model_checking import model_checking
-from prob_minigrid2storm import convert_to_probabilistic_storm, load_env_configs, process_config
+from utils import  load_env_configs, process_config
 from stormvogel.result import Result
 from stormvogel.extensions.visual_algos import policy_iteration
 from probabilistic_minigrids import ProbabilisticEnvWrapper
+import logging
 
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),  # Console output
+        logging.FileHandler('minigrid2storm.log')  # File output
+    ]
+)
+logger = logging.getLogger(__name__)
 
 configs = load_env_configs()
 #contains all the information about the environments that is needed for making a probabilistic env wrapper and converting to storm model.
@@ -16,6 +27,9 @@ distshift_env_info= process_config(configs[2])
 distshift_env_instance= distshift_env_info['env_class'](**distshift_env_info['env_params'])
 distshift_env_prob = ProbabilisticEnvWrapper(distshift_env_instance, distshift_env_info['used_actions'], distshift_env_info['prob_distribution'])
 distshift_env_storm, distshift_visited_states = distshift_env_prob.convert_to_probabilistic_storm()
+
+
+
 
 def test_model_checking(env_storm, env_name): 
     print("=== Model Info ===")
@@ -68,16 +82,48 @@ def test_policy_iteration():
     result = policy_iteration(distshift_env_storm, prop=goal_maximization, visualize=False)
     print(f"Optimization result: {result.values}")
     
-    # You could also try different objectives:
-    # safety_maximization = "Pmax=? [G !\"lava\"]"  # Maximize probability of never hitting lava
-    # lava_minimization = "Pmin=? [F \"lava\"]"     # Minimize probability of hitting lava
+
+def load_and_convert_all_envs(): 
+    """This function loads all environments from environments.yaml, converts them to probabilistic storm models, and logs the results.
+
+    This is a good function for testing whether loading all envs works. Of course, on should inspect the ouput models further to ensure correctness.
+
+    This function can usually be in utils and then used in your code, but for now I make it a test function.
+
+    """
+    env_configs = load_env_configs()
+    failed_envs = []
+    successful_envs = []
+    
+    for env_config in env_configs: 
+        env_name = env_config['name']
+        try:
+            logger.info("Processing new config ...")
+            processed_config = process_config(env_config)
+            logger.info(f"Processed config for environment {processed_config['env_name']}")
+            env_instance = processed_config['env_class'](**processed_config['env_params'])
+            logger.info("Converting to probabilistic storm model ...")
+            prob_env = ProbabilisticEnvWrapper(env_instance, processed_config['used_actions'], processed_config['prob_distribution'])
+            model, envs = prob_env.convert_to_probabilistic_storm()
+            logger.info(f"Model for environment {processed_config['env_name']} loaded to storm successfully.")
+            successful_envs.append(env_name)
+        except Exception as e:
+            logger.error(f"ERROR with environment {env_name}: {str(e)}")
+            failed_envs.append((env_name, str(e)))
+            continue
+    
+    logger.info(f"\n=== SUMMARY ===")
+    logger.info(f"Successful environments ({len(successful_envs)}): {successful_envs}")
+    logger.info(f"Failed environments ({len(failed_envs)}):")
+    for env_name, error in failed_envs:
+        logger.info(f"  - {env_name}: {error}")
+
+
+def main():
+    test_model_checking(distshift_env_storm, "Probabilistic DistShiftEnv")
+    test_policy_iteration()
+    load_and_convert_all_envs() 
 
 
 if __name__ == "__main__":
-    # test_model_checking(crossing_env_storm, "Probabilistic CrossingEnv")
-    # test_policy_iteration()
-
-    distshift_env_prob = ProbabilisticEnvWrapper(distshift_env_instance, distshift_env_info['used_actions'], distshift_env_info['prob_distribution'])
-    model, visited_states = distshift_env_prob.convert_to_probabilistic_storm()
-    print(f"Converted DistShiftEnv to probabilistic storm model with {len(model.states)} states.")
-    print(f"Visited states: {list(visited_states.keys())}")
+    main()
