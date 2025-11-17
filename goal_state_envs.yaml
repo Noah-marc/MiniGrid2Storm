@@ -1,0 +1,98 @@
+# MiniGrid Environments that use Goal states
+# Copied from environments.yaml for environments that have Goal objects
+
+environments:
+  - name: CrossingEnv
+    module: minigrid.envs.crossing
+    class: CrossingEnv
+    class_params:
+      size: 9
+      num_crossings: 1
+      render_mode: null
+    actions: [forward, left, right]
+    probabilities:
+      forward: [0.8, 0.1, 0.1]
+      left: [0.1, 0.8, 0.1]
+      right: [0.1, 0.1, 0.8]
+
+  - name: DistShiftEnv
+    module: minigrid.envs.distshift
+    class: DistShiftEnv
+    class_params:
+      width: 9
+      height: 7
+      render_mode: null
+    actions: [forward, left, right]
+    probabilities:
+      forward: [0.8, 0.1, 0.1]
+      left: [0.1, 0.8, 0.1]
+      right: [0.1, 0.1, 0.8]
+
+  - name: DoorKeyEnv
+    module: minigrid.envs.doorkey
+    class: DoorKeyEnv
+    class_params:
+      size: 8
+      render_mode: null
+    actions: [forward, left, right, pickup, toggle]
+    probabilities:
+      forward: [0.6, 0.1, 0.1, 0.1, 0.1]
+      left: [0.1, 0.6, 0.1, 0.1, 0.1]
+      right: [0.1, 0.1, 0.6, 0.1, 0.1]
+      pickup: [0.1, 0.1, 0.1, 0.6, 0.1]
+      toggle: [0.1, 0.1, 0.1, 0.1, 0.6]
+
+  - name: FourRoomsEnv
+    module: minigrid.envs.fourrooms
+    class: FourRoomsEnv
+    class_params:
+      render_mode: null
+    actions: [forward, left, right]
+    probabilities:
+      forward: [0.8, 0.1, 0.1]
+      left: [0.1, 0.8, 0.1]
+      right: [0.1, 0.1, 0.8]
+
+  - name: lavagap_small
+    module: minigrid.envs.lavagap
+    class: LavaGapEnv
+    class_params:
+      size: 5
+      render_mode: null
+    actions: [forward, left, right]
+    probabilities:
+      forward: [0.8, 0.1, 0.1]  # High success rate
+      left: [0.1, 0.8, 0.1]
+      right: [0.1, 0.1, 0.8]
+
+
+  - name: LockedRoomEnv
+    module: minigrid.envs.lockedroom
+    class: LockedRoomEnv
+    class_params:
+      render_mode: null
+      size: 11
+    actions: [forward, left, right, pickup, toggle]
+    probabilities:
+      forward: [0.6, 0.1, 0.1, 0.1, 0.1]
+      left: [0.1, 0.6, 0.1, 0.1, 0.1]
+      right: [0.1, 0.1, 0.6, 0.1, 0.1]
+      pickup: [0.1, 0.1, 0.1, 0.6, 0.1]
+      toggle: [0.1, 0.1, 0.1, 0.1, 0.6]
+
+  - name: MultiRoomEnv
+    module: minigrid.envs.multiroom
+    class: MultiRoomEnv
+    class_params:
+      minNumRooms: 2
+      maxNumRooms: 4
+      render_mode: null
+    actions: [forward, left, right]
+    probabilities:
+      forward: [0.8, 0.1, 0.1]
+      left: [0.1, 0.8, 0.1]
+      right: [0.1, 0.1, 0.8]
+
+# Note: DynamicObstaclesEnv and EmptyEnv are commented out in the original environments.yaml
+# DynamicObstaclesEnv has issues with non-deterministic obstacle placement when converted to storm. Because of the random obstacle placement, the MDP becomes very large. 
+# EmptyEnv is not included in the original environments.yaml as it is too simple 
