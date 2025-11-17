@@ -1,12 +1,17 @@
 
 from stormvogel.stormpy_utils.model_checking import model_checking
-from utils import  load_env_configs, process_config
 from stormvogel.result import Result
 from stormvogel.extensions.visual_algos import policy_iteration
-from probabilistic_minigrids import ProbabilisticEnvWrapper
+from pathlib import Path
 import logging
+from PIL import Image
+
+from probabilistic_minigrids import ProbabilisticEnvWrapper
+from utils import load_env_configs, process_config
+
 
 logging.basicConfig(
+
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
@@ -27,8 +32,6 @@ distshift_env_info= process_config(configs[2])
 distshift_env_instance= distshift_env_info['env_class'](**distshift_env_info['env_params'])
 distshift_env_prob = ProbabilisticEnvWrapper(distshift_env_instance, distshift_env_info['used_actions'], distshift_env_info['prob_distribution'])
 distshift_env_storm, distshift_visited_states = distshift_env_prob.convert_to_probabilistic_storm()
-
-
 
 
 def test_model_checking(env_storm, env_name): 
@@ -98,11 +101,11 @@ def load_and_convert_all_envs():
     for env_config in env_configs: 
         env_name = env_config['name']
         try:
-            logger.info("Processing new config ...")
+            logger.debug("Processing new config ...")
             processed_config = process_config(env_config)
-            logger.info(f"Processed config for environment {processed_config['env_name']}")
+            logger.debug(f"Processed config for environment {processed_config['env_name']}")
             env_instance = processed_config['env_class'](**processed_config['env_params'])
-            logger.info("Converting to probabilistic storm model ...")
+            logger.debug("Converting to probabilistic storm model ...")
             prob_env = ProbabilisticEnvWrapper(env_instance, processed_config['used_actions'], processed_config['prob_distribution'])
             model, envs = prob_env.convert_to_probabilistic_storm()
             logger.info(f"Model for environment {processed_config['env_name']} loaded to storm successfully.")
@@ -119,10 +122,45 @@ def load_and_convert_all_envs():
         logger.info(f"  - {env_name}: {error}")
 
 
+def test_add_lava_all_envs(dir_path: str = "./logs/img/"): 
+    logger.info("\n\n ==== TESTING  add_lava() FOR ALL ENVS ===")
+    env_configs = load_env_configs("./goal_state_envs.yaml")
+    failed_envs = []
+    successful_envs = []
+    for env_config in env_configs: 
+        env_name = env_config['name']
+        try:
+            processed_config = process_config(env_config)
+            processed_config['env_params']['render_mode'] = 'rgb_array'
+
+            env_instance = processed_config['env_class'](**processed_config['env_params'])
+            prob_env = ProbabilisticEnvWrapper(env_instance, processed_config['used_actions'], processed_config['prob_distribution'])
+            pos = prob_env.add_lava()
+            img = Image.fromarray(prob_env.render())
+            img_path = Path(dir_path).joinpath(f'{env_name}.png')
+            img.save(img_path)
+            logger.info(f"Image saved to: {img_path}")
+            if pos is not None:
+                logger.info(f"Lava added to environment {env_name} at position {pos}.")
+                successful_envs.append(env_name)
+            else:
+                logger.info(f"No lava added to environment {env_name} (already has lava or no valid position).")
+                failed_envs.append(env_name)
+        except Exception as e:
+            logger.error(f"ERROR while adding lava to environment {env_name}: {str(e)}")
+            continue
+    logger.info(f"\n=== SUMMARY of add_lava tests ===")
+    logger.info(f"Successful lava additions: {len(successful_envs)}")
+    logger.info(f"Failed lava additions: {len(failed_envs)}")
+
+    
+
 def main():
-    test_model_checking(distshift_env_storm, "Probabilistic DistShiftEnv")
-    test_policy_iteration()
-    load_and_convert_all_envs() 
+    # test_model_checking(distshift_env_storm, "Probabilistic DistShiftEnv")
+    # test_policy_iteration()
+    # load_and_convert_all_envs() 
+    # load_and_convert_all_envs()
+    test_add_lava_all_envs()
 
 
 if __name__ == "__main__":
