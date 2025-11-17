@@ -8,3 +8,6 @@ wheels/
 .ipynb_checkpoints/
 # Virtual environments
 .venv
+
+#images from tests/visualizations
+img/
