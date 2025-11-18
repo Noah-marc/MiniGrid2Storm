@@ -99,6 +99,11 @@ class ProbabilisticEnvWrapper:
             given_action = getattr(Actions, a[0])
             probs = self.prob_distribution[given_action]
             for i,action in enumerate(self.used_actions): 
+                if action == Actions.pickup: 
+                    fwd_pos = self.env.front_pos
+                    #in case of pickup, chech if the cell in front can actually be picked up. If not skip (don't waste resources). 
+                    if not curr_env.grid.get(fwd_pos[0], fwd_pos[1]).can_pickup():
+                        continue
                 env_copy = copy.deepcopy(curr_env)
                 env_copy.step(action)
                 hash = env_copy.hash()
@@ -111,7 +116,8 @@ class ProbabilisticEnvWrapper:
                         init=init, 
                         labels=labels, 
                         available_actions=available_actions, 
-                        modeltype=ModelType.MDP
+                        modeltype=ModelType.MDP,
+                        max_size=100000
                         )
         return model, visited_envs
 
@@ -148,6 +154,7 @@ class ProbabilisticEnvWrapper:
         chosen_pos = self.env.np_random.choice(len(valid_positions))
         (x, y) = valid_positions[chosen_pos]
         self.env.grid.set(x, y, Lava())
+        self.lava_pos = (x,y)  # Store the lava position for restoration on reset
         print(f"Placed lava at position ({x}, {y})")    
         return (x,y)
     
