@@ -19,7 +19,7 @@ environments:
     class_params:
       size: 9
       num_crossings: 1
-      render_mode: null
+      render_mode: rgb_array
     actions: [forward, left, right]
     probabilities:
       forward: [0.8, 0.1, 0.1]
@@ -32,7 +32,7 @@ environments:
     class_params:
       width: 9
       height: 7
-      render_mode: null
+      render_mode: rgb_array
     actions: [forward, left, right]
     probabilities:
       forward: [0.8, 0.1, 0.1]
@@ -45,7 +45,7 @@ environments:
     class_params:
       width: 8
       height: 6
-      render_mode: null
+      render_mode: rgb_array
     actions: [forward, left, right]
     probabilities:
       forward: [0.8, 0.1, 0.1]
@@ -57,7 +57,7 @@ environments:
     class: DoorKeyEnv
     class_params:
       size: 8
-      render_mode: null
+      render_mode: rgb_array
     actions: [forward, left, right, pickup, toggle]
     probabilities:
       forward: [0.6, 0.1, 0.1, 0.1, 0.1]
@@ -88,7 +88,7 @@ environments:
     module: minigrid.envs.fetch
     class: FetchEnv
     class_params:
-      render_mode: null
+      render_mode: rgb_array
     actions: [forward, left, right, pickup]
     probabilities:
       forward: [0.7, 0.1, 0.1, 0.1]
@@ -100,7 +100,7 @@ environments:
     module: minigrid.envs.fourrooms
     class: FourRoomsEnv
     class_params:
-      render_mode: null
+      render_mode: rgb_array
     actions: [forward, left, right]
     probabilities:
       forward: [0.8, 0.1, 0.1]
@@ -112,7 +112,7 @@ environments:
     module: minigrid.envs.gotodoor
     class: GoToDoorEnv
     class_params:
-      render_mode: null
+      render_mode: rgb_array
     actions: [forward, left, right, done]
     probabilities:
       forward: [0.7, 0.1, 0.1, 0.1]
@@ -125,7 +125,7 @@ environments:
     module: minigrid.envs.gotoobject
     class: GoToObjectEnv
     class_params:
-      render_mode: null
+      render_mode: rgb_array
     actions: [forward, left, right, done]
     probabilities:
       forward: [0.7, 0.1, 0.1, 0.1]
@@ -137,7 +137,7 @@ environments:
     module: minigrid.envs.keycorridor
     class: KeyCorridorEnv
     class_params:
-      render_mode: null
+      render_mode: rgb_array
     actions: [forward, left, right, pickup]
     probabilities:
       forward: [0.7, 0.1, 0.1, 0.1]
@@ -150,7 +150,7 @@ environments:
     class: LavaGapEnv
     class_params:
       size: 5
-      render_mode: null
+      render_mode: rgb_array
     actions: [forward, left, right]
     probabilities:
       forward: [0.8, 0.1, 0.1]  # High success rate
@@ -162,7 +162,7 @@ environments:
     class: LavaGapEnv
     class_params:
       size: 5
-      render_mode: null
+      render_mode: rgb_array
     actions: [forward, left, right]
     probabilities:
       forward: [0.6, 0.2, 0.2]  # More noise
@@ -176,8 +176,8 @@ environments:
     module: minigrid.envs.lockedroom
     class: LockedRoomEnv
     class_params:
-      render_mode: null
-      size: 11
+      render_mode: rgb_array
+      size: 19
     actions: [forward, left, right, pickup, toggle]
     probabilities:
       forward: [0.6, 0.1, 0.1, 0.1, 0.1]
@@ -192,7 +192,7 @@ environments:
     class: MemoryEnv
     class_params:
       size: 9  # Must be odd for height % 2 == 1 requirement
-      render_mode: null
+      render_mode: rgb_array
     actions: [forward, left, right, pickup, toggle]
     probabilities:
       forward: [0.6, 0.1, 0.1, 0.1, 0.1]
@@ -207,7 +207,7 @@ environments:
     class_params:
       minNumRooms: 2
       maxNumRooms: 4
-      render_mode: null
+      render_mode: rgb_array
     actions: [forward, left, right]
     probabilities:
       forward: [0.8, 0.1, 0.1]
@@ -247,7 +247,7 @@ environments:
     module: minigrid.envs.redbluedoors
     class: RedBlueDoorEnv
     class_params:
-      render_mode: null
+      render_mode: rgb_array
     actions: [forward, left, right, toggle]
     probabilities:
       forward: [0.7, 0.1, 0.1, 0.1]
@@ -259,7 +259,7 @@ environments:
     module: minigrid.envs.unlock
     class: UnlockEnv
     class_params:
-      render_mode: null
+      render_mode: rgb_array
     actions: [forward, left, right, toggle]
     probabilities:
       forward: [0.7, 0.1, 0.1, 0.1]
@@ -271,7 +271,7 @@ environments:
     module: minigrid.envs.unlockpickup
     class: UnlockPickupEnv
     class_params:
-      render_mode: null
+      render_mode: rgb_array
     actions: [forward, left, right, pickup, toggle]
     probabilities:
       forward: [0.6, 0.1, 0.1, 0.1, 0.1]
