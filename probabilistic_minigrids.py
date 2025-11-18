@@ -101,8 +101,11 @@ class ProbabilisticEnvWrapper:
             for i,action in enumerate(self.used_actions): 
                 if action == Actions.pickup: 
                     fwd_pos = self.env.front_pos
-                    #in case of pickup, chech if the cell in front can actually be picked up. If not skip (don't waste resources). 
-                    if not curr_env.grid.get(fwd_pos[0], fwd_pos[1]).can_pickup():
+                    fwd_cell = curr_env.grid.get(fwd_pos[0], fwd_pos[1])
+                    #in case of pickup, chech if the cell in front can actually be picked up. 
+                    #If not, then we know that the minigrid code will not change the state, so we can directly return the current state with the corresponding probability. 
+                    if not fwd_cell or not fwd_cell.can_pickup():
+                        result.append((probs[i], s))
                         continue
                 env_copy = copy.deepcopy(curr_env)
                 env_copy.step(action)
