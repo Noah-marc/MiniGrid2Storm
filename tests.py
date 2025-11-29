@@ -7,7 +7,7 @@ import logging
 from PIL import Image
 
 from probabilistic_minigrids import ProbabilisticEnvWrapper
-from utils import load_env_configs, process_config
+from utils import load_env_configs, process_config, custom_policy_iteration
 
 
 logging.basicConfig(
@@ -74,17 +74,6 @@ def test_model_checking(env_storm, env_name):
     # result:Result = model_checking(env_storm, goal_eventually_max)
     # print(result.values)
 
-
-def test_policy_iteration(): 
-    # Define what we want to optimize for
-    goal_maximization = "P=? [F \"goal\"]"  # Maximize probability of reaching goal
-    
-    print(f"Running policy iteration to optimize: {goal_maximization}")
-    print(f"This will find the policy that maximizes the chance of reaching the goal")
-    
-    result = policy_iteration(distshift_env_storm, prop=goal_maximization, visualize=False)
-    print(f"Optimization result: {result.values}")
-    
 
 def load_and_convert_all_envs(): 
     """This function loads all environments from environments.yaml, converts them to probabilistic storm models, and logs the results.
@@ -153,14 +142,41 @@ def test_add_lava_all_envs(dir_path: str = "./logs/img/"):
     logger.info(f"Successful lava additions: {len(successful_envs)}")
     logger.info(f"Failed lava additions: {len(failed_envs)}")
 
+def test_policy_iteration_for_goal_state_envs(dir_path: str = "./logs/img/"): 
+    logger.info("\n\n ==== TESTING  policy_iteration() FOR ALL GOAL STATE ENVS ===")
+    # Define what we want to optimize for
+    goal_maximization = "Pmax=? [F \"goal\"]"  # Maximize probability of reaching goal
     
+    env_configs = load_env_configs("./goal_state_envs.yaml")
+    failed_envs = []
+    successful_envs = []
+    for env_config in env_configs: 
+        env_name = env_config['name']
+        try:
+            processed_config = process_config(env_config)
+
+            env_instance = processed_config['env_class'](**processed_config['env_params'])
+            prob_env = ProbabilisticEnvWrapper(env_instance, processed_config['used_actions'], processed_config['prob_distribution'])
+            prob_env.add_lava()   
+            img = Image.fromarray(prob_env.render())
+            img_path = Path(dir_path).joinpath(f'{env_name}.png')
+            img.save(img_path)       
+            prob_env_storvogel, prob_env_visited_states = prob_env.convert_to_probabilistic_storm()
+            
+            logger.info("Running policy iteration ...")
+            result, scheduler = custom_policy_iteration(prob_env_storvogel, prop=goal_maximization, visualize=False)
+            logger.info(f"Policy iteration completed for environment {env_name}.")
+        except Exception as e:
+            logger.error(f"ERROR while testing policy iteration for environment {env_name}: {str(e)}")
+            continue    
+   
 
 def main():
     # test_model_checking(distshift_env_storm, "Probabilistic DistShiftEnv")
     # test_policy_iteration()
     # load_and_convert_all_envs() 
     # load_and_convert_all_envs()
-    test_add_lava_all_envs()
+    test_policy_iteration_for_goal_state_envs()
 
 
 if __name__ == "__main__":
