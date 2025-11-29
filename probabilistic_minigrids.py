@@ -107,6 +107,15 @@ class ProbabilisticEnvWrapper:
                     if not fwd_cell or not fwd_cell.can_pickup():
                         result.append((probs[i], s))
                         continue
+                elif action == Actions.toggle: 
+                    fwd_pos = self.env.front_pos
+                    fwd_cell = curr_env.grid.get(fwd_pos[0], fwd_pos[1])
+                    #in case of pickup, chech if the cell in front can actually be picked up. 
+                    #If not, then we know that the minigrid code will not change the state, so we can directly return the current state with the corresponding probability. 
+                    if not fwd_cell: #There is the function toggle() in WorldObj, but it then exectues side effects on the env, which we do not want here. Hence, we ony skip empty cells.
+                        result.append((probs[i], s))
+                        continue
+
                 env_copy = copy.deepcopy(curr_env)
                 env_copy.step(action)
                 hash = env_copy.hash()
