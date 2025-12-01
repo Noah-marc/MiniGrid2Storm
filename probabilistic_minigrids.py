@@ -3,8 +3,6 @@ from gymnasium.core import ActType
 from minigrid.core.actions import Actions
 from minigrid.core.world_object import Lava
 from stormvogel import bird, ModelType
-from stormvogel.stormpy_utils.mapping import stormvogel_to_stormpy
-import stormpy
 import copy
 
 
