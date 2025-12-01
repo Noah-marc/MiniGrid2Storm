@@ -1,0 +1,70 @@
+
+from stormvogel.stormpy_utils.model_checking import model_checking
+from minigrid.core.actions import Actions
+from stormvogel.model import Action, Model
+
+
+
+
+
+
+    
+    
+
+class Shield: 
+
+    def verify_action(self, state: int, action: Actions) -> Actions:
+        """ Should be overwritten by child classes.
+            The function should implement the shielding logic and either return the iven action if allowed or give an alternative action
+            It is set up such that you can just pass actions from the minigrid Actions enum. If you use it with Stormvogel or another library, make sure to convert properly.
+        """
+        return action
+    
+class DeltaShield(Shield): 
+
+    def __init__(self, model: Model, safety_property: str, delta:float =0.5): 
+        
+        self.model = model
+        self.safety_property = safety_property
+        self.delta = delta
+        self.min_probs = model_checking(model, safety_property)
+        self.optimal_safety_policy = self.min_probs.scheduler
+
+    def _action_value(self, state:int, action:Actions): 
+        """ Compute the value of taking action in state."""
+
+        choice_for_state = self.model.choices[state]
+        
+        stormvogel_action = Action(frozenset({action.name}))
+        
+        if stormvogel_action not in choice_for_state.transition:
+            raise ValueError(f"Action {action.name} not found in state {state}")
+        
+        subranches = choice_for_state.transition[stormvogel_action]
+        value = 0.0
+
+        for prob_s_prime, s_prime in subranches.branch: 
+            min_prob_s_prime = self.min_probs.values[s_prime.id]
+            value += prob_s_prime * min_prob_s_prime
+
+        return value
+
+    
+    def verify_action(self, state: int, action: Actions) -> Actions: 
+        """
+        Implements delta-shielding logic.
+            The function checks if the given action is allowed in the given state according to delta-shielding.
+            If allowed, it returns the given action; otherwise, it blocks the action (returns None).
+        """
+        assert state is not None
+        assert action is not None
+
+        act_val = self._action_value(state, action)
+        optimal_act_val = self.min_probs.values[state]
+        if self.delta * act_val <= optimal_act_val:
+            return action
+        else:
+            return self.optimal_safety_policy.get_choice_of_state(state)
+
+
+
