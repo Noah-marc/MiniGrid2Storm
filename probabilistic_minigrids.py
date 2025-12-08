@@ -4,6 +4,7 @@ from minigrid.core.actions import Actions
 from minigrid.core.world_object import Lava
 from stormvogel import bird, ModelType
 import copy
+import numpy as np
 
 
 
@@ -30,8 +31,7 @@ class ProbabilisticEnvWrapper:
         if used_actions is not None and prob_distribution is not None:
             assert len(used_actions) == len(prob_distribution), "Length of used_actions must match length of prob_distribution"
             for l in prob_distribution.values():
-                assert abs(sum(l)-1.0) < 1e-6 #Probabilities for each action must sum to 1.0
-        # Additional initialization for probabilistic elements can be added here
+                assert abs(sum(l)-1.0) < 1e-6 
         
 
         self.env = env
@@ -44,11 +44,14 @@ class ProbabilisticEnvWrapper:
         self.env.reset() 
         
     def step(self, action: ActType):
-        actual_action = self.env.np_random.choice(self.used_actions, p=self.prob_distribution[action])
+        # Choose action index based on probabilities, then get the actual action
+        action_idx = np.random.choice(len(self.used_actions), p=self.prob_distribution[action])
+        actual_action = self.used_actions[action_idx]
         return self.env.step(actual_action)
     
-    def reset(self ): 
-        self.env.reset()
+    def reset(self, seed:int | None = None ): 
+        self.env.reset(seed=seed)
+        
         #restore lava if it was added before
         if self.lava_pos is not None:
             self.env.grid.set(self.lava_pos[0], self.lava_pos[1], Lava())
@@ -129,7 +132,36 @@ class ProbabilisticEnvWrapper:
                         modeltype=ModelType.MDP,
                         max_size=100000
                         )
+        
+        # Create hash-to-state-ID mapping for efficient lookup during simulations
+        # The visited_envs dict preserves the order in which states were discovered,
+        # which corresponds directly to the StormVogel state IDs (0, 1, 2, ...)
+        self.hash_to_state_id = {}
+        for state_id, env_hash in enumerate(visited_envs.keys()):
+            self.hash_to_state_id[env_hash] = state_id
+        self.model = model
+    
+            
         return model, visited_envs
+
+    def get_current_state_id(self) -> int:
+        """
+        Get the StormVogel state ID corresponding to the current environment state.
+        
+        Returns:
+            int: The StormVogel state ID for the current environment state.
+            
+        Raises:
+            ValueError: If the current environment state was not encountered during conversion.
+        """
+        if not hasattr(self, 'hash_to_state_id'):
+            raise ValueError("Environment has not been converted to StormVogel model yet. Call convert_to_probabilistic_storm() first.")
+        
+        current_hash = self.env.hash()
+        if current_hash not in self.hash_to_state_id:
+            raise ValueError(f"Current environment state (hash: {current_hash}) was not encountered during StormVogel conversion.")
+            
+        return self.hash_to_state_id[current_hash]
 
     def add_lava(self, pos: tuple = None) -> tuple[int,int] | None:
         """
