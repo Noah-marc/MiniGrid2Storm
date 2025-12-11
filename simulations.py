@@ -48,12 +48,9 @@ def run_simulation(env: ProbabilisticEnvWrapper, policy:Scheduler, num_episodes:
             action = stormvogel_to_minigrid_action(action)
 
             obs, reward, terminated, truncated, info = env.step(action)
-            step_count += 1
-            
-            # Get the new state ID - no need to convert to State object!
+            step_count += 1            
             current_state = env.get_current_state_id()
         
-        # Get agent position and cell type for validation
         agent_pos = env.env.agent_pos
         agent_cell = env.env.grid.get(agent_pos[0], agent_pos[1])
         agent_cell_type = agent_cell.type if agent_cell is not None else "None"
