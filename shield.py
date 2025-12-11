@@ -13,7 +13,7 @@ from stormvogel.model import Action, Model
 
 class Shield: 
 
-    def verify_action(self, state: int, action: Actions) -> Actions:
+    def verify_action(self, state: int, action: Action) -> Actions:
         """ Should be overwritten by child classes.
             The function should implement the shielding logic and either return the iven action if allowed or give an alternative action
             It is set up such that you can just pass actions from the minigrid Actions enum. If you use it with Stormvogel or another library, make sure to convert properly.
@@ -30,23 +30,20 @@ class DeltaShield(Shield):
         self.min_probs = model_checking(model, safety_property)
         self.optimal_safety_policy = self.min_probs.scheduler
 
-    def _action_value(self, state:int, action:Actions): 
+    def _action_value(self, state:int, action:Action): 
         """ Compute the value of taking action in state."""
 
-        choice_for_state = self.model.choices[state]
+        choice_for_state = self.model.choices[state]        
+        if action not in choice_for_state.transition:
+            action_labels = list(action.labels) if hasattr(action, 'labels') else str(action)
+            raise ValueError(f"Action {action_labels} not found in state {state}")
         
-        stormvogel_action = Action(frozenset({action.name}))
-        
-        if stormvogel_action not in choice_for_state.transition:
-            raise ValueError(f"Action {action.name} not found in state {state}")
-        
-        subranches = choice_for_state.transition[stormvogel_action]
+        subranches = choice_for_state.transition[action]
         value = 0.0
 
         for prob_s_prime, s_prime in subranches.branch: 
             min_prob_s_prime = self.min_probs.values[s_prime.id]
             value += prob_s_prime * min_prob_s_prime
-
         return value
 
     
