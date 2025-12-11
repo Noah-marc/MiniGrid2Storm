@@ -37,7 +37,7 @@ def run_simulation(env: ProbabilisticEnvWrapper, policy:Scheduler, num_episodes:
         env.reset(seed=SIMULATION_SEED)  # Same seed = same layout = same hash_to_state_id mapping
         terminated = False
         truncated = False
-        current_state = env.model.get_initial_state()
+        current_state = env.get_current_state_id()  
         step_count = 0
         
         while not (terminated or truncated):
@@ -45,7 +45,6 @@ def run_simulation(env: ProbabilisticEnvWrapper, policy:Scheduler, num_episodes:
             if shield is not None:
                 action = shield.verify_action(current_state, action)
 
-            #potentially convert Action to Stormvogel Action if needed
             action = stormvogel_to_minigrid_action(action)
 
             obs, reward, terminated, truncated, info = env.step(action)
