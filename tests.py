@@ -161,23 +161,50 @@ def test_policy_iteration_for_goal_state_envs(dir_path: str = "./logs/img/"):
             img = Image.fromarray(prob_env.render())
             img_path = Path(dir_path).joinpath(f'{env_name}.png')
             img.save(img_path)       
-            prob_env_storvogel, prob_env_visited_states = prob_env.convert_to_probabilistic_storm()
+            prob_env_stormvogel, prob_env_visited_states = prob_env.convert_to_probabilistic_storm()
             
             logger.info("Running policy iteration ...")
-            result, scheduler = custom_policy_iteration(prob_env_storvogel, prop=goal_maximization, visualize=False)
+            result, scheduler = custom_policy_iteration(prob_env_stormvogel, prop=goal_maximization, visualize=False)
             logger.info(f"Policy iteration completed for environment {env_name}.")
         except Exception as e:
             logger.error(f"ERROR while testing policy iteration for environment {env_name}: {str(e)}")
             continue    
    
+def test_policy_iteration_for_single_env(dir_path: str = "./logs/img/"):
+
+    logger.info("\n\n ==== TESTING  policy_iteration() FOR SINGLE GOAL STATE ENV ===")  
+    goal_maximization = "Pmax=? [F \"goal\"]"
+    env_configs = load_env_configs("./goal_state_envs.yaml")
+    env_config = env_configs[0]  # Select the first environment for testing  
+    env_name = env_config['name']
+    logger.info(f"Testing custom policy iteration for environment: {env_name}")
+    try: 
+        processed_config = process_config(env_config)
+        env_instance = processed_config['env_class'](**processed_config['env_params'])
+        prob_env = ProbabilisticEnvWrapper(env_instance, processed_config['used_actions'], processed_config['prob_distribution'])
+        prob_env.add_lava()   
+        img = Image.fromarray(prob_env.render())
+        img_path = Path(dir_path).joinpath(f'{env_name}.png')
+        img.save(img_path)       
+        prob_env_stormvogel, prob_env_visited_states = prob_env.convert_to_probabilistic_storm()
+        
+        # Add name attribute to prevent printing errors (same fix as with model printing)
+        prob_env_stormvogel.name = env_name
+        
+        logger.info("Running policy iteration ...")
+        result, scheduler = custom_policy_iteration(prob_env_stormvogel, prop=goal_maximization, visualize=False)
+        logger.info(f"Policy iteration completed for environment {env_name}.")
+        print(scheduler.get_choice_of_state(0))
+    except Exception as e:
+        logger.error(f"ERROR while testing policy iteration for environment {env_name}: {str(e)}")    
 
 def main():
     # test_model_checking(distshift_env_storm, "Probabilistic DistShiftEnv")
     # test_policy_iteration()
     # load_and_convert_all_envs() 
     # load_and_convert_all_envs()
-    test_policy_iteration_for_goal_state_envs()
-
+    # test_policy_iteration_for_goal_state_envs()
+    test_policy_iteration_for_single_env()
 
 if __name__ == "__main__":
     main()
