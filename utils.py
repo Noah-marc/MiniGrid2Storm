@@ -2,6 +2,7 @@ from minigrid.core.actions import Actions
 from typing import List, Dict
 from time import sleep
 from stormvogel.extensions.visual_algos import arg_max 
+from stormvogel.model import Action as StormvogelAction
 
 import yaml
 import importlib
@@ -79,3 +80,8 @@ def custom_policy_iteration(model: stormvogel.model.Model,
         print("Value iteration done:")
         stormvogel.show(model, layout=layout, scheduler=new, result=dtmc_result)  # type: ignore
     return dtmc_result, new  # type: ignore
+
+def stormvogel_to_minigrid_action(sv_action: StormvogelAction) -> Actions:
+    """Convert StormVogel Action to MiniGrid Actions enum"""
+    action_name = next(iter(sv_action.labels))  # Get the action name string
+    return Actions[action_name]  # Convert to Actions enum
