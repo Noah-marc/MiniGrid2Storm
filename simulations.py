@@ -72,4 +72,9 @@ def run_simulation(env: ProbabilisticEnvWrapper, policy:Scheduler, num_episodes:
             if max_steps is not None and step_count < max_steps:
                 raise ValueError(f"Episode {episode}: Truncated after {step_count} steps but max_steps is {max_steps}")
             reach_truncated += 1
+    
+    if shield:
+        print(f"DEBUG: Shield blocked {shield.blocked} actions and validated {shield.not_blocked}")
+        shield.blocked = 0
+        shield.not_blocked = 0 
     return reach_goal, reach_lava, reach_truncated

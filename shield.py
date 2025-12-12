@@ -3,14 +3,6 @@ from stormvogel.stormpy_utils.model_checking import model_checking
 from minigrid.core.actions import Actions
 from stormvogel.model import Action, Model
 
-
-
-
-
-
-    
-    
-
 class Shield: 
 
     def verify_action(self, state: int, action: Action) -> Actions:
@@ -29,6 +21,11 @@ class DeltaShield(Shield):
         self.delta = delta
         self.min_probs = model_checking(model, safety_property)
         self.optimal_safety_policy = self.min_probs.scheduler
+        
+
+        #FOR DEBUG ONLY
+        self.blocked = 0
+        self.not_blocked = 0
 
     def _action_value(self, state:int, action:Action): 
         """ Compute the value of taking action in state."""
@@ -59,9 +56,10 @@ class DeltaShield(Shield):
         act_val = self._action_value(state, action)
         optimal_act_val = self.min_probs.values[state]
         if self.delta * act_val <= optimal_act_val:
+            self.not_blocked += 1
             return action
         else:
+            self.blocked += 1 
             return self.optimal_safety_policy.get_choice_of_state(state)
-
 
 
