@@ -5,11 +5,11 @@ from minigrid.core.world_object import Lava
 from stormvogel import bird, ModelType
 import copy
 import numpy as np
+import gymnasium as gym
 
 
 
-
-class ProbabilisticEnvWrapper:
+class ProbabilisticEnvWrapper(gym.Env):
     """
     A wrapper for MiniGrid environments that introduces probabilistic action outcomes.
 
@@ -43,18 +43,32 @@ class ProbabilisticEnvWrapper:
         #reset initial env such that env.agent_pos and other variables are initialized
         self.env.reset() 
         
+        self.action_space = env.action_space
+        self.observation_space = env.observation_space
+        self.metadata = getattr(env, 'metadata', {})
+        
     def step(self, action: ActType):
+        # Convert integer action to Actions enum
+        if isinstance(action, (int, np.integer)):
+            action_enum = Actions(action)
+        else:
+            action_enum = action
+            
         # Choose action index based on probabilities, then get the actual action
-        action_idx = np.random.choice(len(self.used_actions), p=self.prob_distribution[action])
+        action_idx = np.random.choice(len(self.used_actions), p=self.prob_distribution[action_enum])
         actual_action = self.used_actions[action_idx]
-        return self.env.step(actual_action)
+        
+        # Convert back to integer for the underlying MiniGrid environment
+        return self.env.step(actual_action.value)
     
-    def reset(self, seed:int | None = None ): 
-        self.env.reset(seed=seed)
+    def reset(self, seed:int | None = None, options=None): 
+        obs, info = self.env.reset(seed=seed, options=options)
         
         #restore lava if it was added before
         if self.lava_pos is not None:
             self.env.grid.set(self.lava_pos[0], self.lava_pos[1], Lava())
+            
+        return obs, info
 
     def __getattr__(self, name):
         # Delegate all other attributes/methods to the wrapped env
