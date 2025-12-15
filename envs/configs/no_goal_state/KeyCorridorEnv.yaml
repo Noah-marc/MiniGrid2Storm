@@ -1,0 +1,11 @@
+name: KeyCorridorEnv
+module: minigrid.envs.keycorridor
+class: KeyCorridorEnv
+class_params:
+  render_mode: rgb_array
+actions: [forward, left, right, pickup]
+probabilities:
+  forward: [0.7, 0.1, 0.1, 0.1]
+  left: [0.1, 0.7, 0.1, 0.1]
+  right: [0.1, 0.1, 0.7, 0.1]
+  pickup: [0.1, 0.1, 0.1, 0.7]

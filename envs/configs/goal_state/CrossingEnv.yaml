@@ -1,0 +1,12 @@
+name: CrossingEnv
+module: minigrid.envs.crossing
+class: CrossingEnv
+class_params:
+  size: 9
+  num_crossings: 1
+  render_mode: rgb_array
+actions: [forward, left, right]
+probabilities:
+  forward: [0.6, 0.2, 0.2]
+  left: [0.2, 0.6, 0.2]
+  right: [0.2, 0.2, 0.6]

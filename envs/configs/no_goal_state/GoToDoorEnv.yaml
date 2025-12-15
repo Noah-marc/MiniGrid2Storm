@@ -1,0 +1,11 @@
+name: GoToDoorEnv
+module: minigrid.envs.gotodoor
+class: GoToDoorEnv
+class_params:
+  render_mode: rgb_array
+actions: [forward, left, right, done]
+probabilities:
+  forward: [0.7, 0.1, 0.1, 0.1]
+  left: [0.1, 0.7, 0.1, 0.1]
+  right: [0.1, 0.1, 0.7, 0.1]
+  done: [0.1, 0.1, 0.1, 0.7]

@@ -1,0 +1,11 @@
+name: RedBlueDoorEnv
+module: minigrid.envs.redbluedoors
+class: RedBlueDoorEnv
+class_params:
+  render_mode: rgb_array
+actions: [forward, left, right, toggle]
+probabilities:
+  forward: [0.7, 0.1, 0.1, 0.1]
+  left: [0.1, 0.7, 0.1, 0.1]
+  right: [0.1, 0.1, 0.7, 0.1]
+  toggle: [0.1, 0.1, 0.1, 0.7]

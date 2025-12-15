@@ -1,0 +1,12 @@
+name: BlockedUnlockPickupEnv
+module: minigrid.envs.blockedunlockpickup
+class: BlockedUnlockPickupEnv
+class_params:
+  render_mode: null
+actions: [forward, left, right, pickup, toggle]
+probabilities:
+  forward: [0.6, 0.1, 0.1, 0.1, 0.1]
+  left: [0.1, 0.6, 0.1, 0.1, 0.1]
+  right: [0.1, 0.1, 0.6, 0.1, 0.1]
+  pickup: [0.1, 0.1, 0.1, 0.6, 0.1]
+  toggle: [0.1, 0.1, 0.1, 0.1, 0.6]

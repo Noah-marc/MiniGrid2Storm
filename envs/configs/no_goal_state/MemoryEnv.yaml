@@ -1,0 +1,13 @@
+name: MemoryEnv
+module: minigrid.envs.memory
+class: MemoryEnv
+class_params:
+  size: 9  # Must be odd for height % 2 == 1 requirement
+  render_mode: rgb_array
+actions: [forward, left, right, pickup, toggle]
+probabilities:
+  forward: [0.6, 0.1, 0.1, 0.1, 0.1]
+  left: [0.1, 0.6, 0.1, 0.1, 0.1]
+  right: [0.1, 0.1, 0.6, 0.1, 0.1]
+  pickup: [0.1, 0.1, 0.1, 0.6, 0.1]
+  toggle: [0.1, 0.1, 0.1, 0.1, 0.6]

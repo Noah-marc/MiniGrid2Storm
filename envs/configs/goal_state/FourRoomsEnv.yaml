@@ -1,0 +1,10 @@
+name: FourRoomsEnv
+module: minigrid.envs.fourrooms
+class: FourRoomsEnv
+class_params:
+  render_mode: rgb_array
+actions: [forward, left, right]
+probabilities:
+  forward: [0.8, 0.1, 0.1]
+  left: [0.1, 0.8, 0.1]
+  right: [0.1, 0.1, 0.8]
