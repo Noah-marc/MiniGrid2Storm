@@ -12,6 +12,9 @@ import gymnasium as gym
 class ProbabilisticEnvWrapper(gym.Env):
     """
     A wrapper for MiniGrid environments that introduces probabilistic action outcomes.
+    It can also be converted to a Stormvogel model for formal verification.
+    The wrapper is an own gymansium Env, s.t. it can also be used for training policies with gym. 
+    However, it is not a Minigrid. It overrides some functions andforwards all unimplemented functions to the underlying MiniGrid env.
 
     Args: 
         env (MiniGridEnv): The MiniGrid environment to wrap.
@@ -19,6 +22,7 @@ class ProbabilisticEnvWrapper(gym.Env):
         prob_distribution (dict[list[float]], optional): A dictionary mapping each action in used_actions to a list of probabilities for each action in used_actions.
                                                         The probabilities must sum to 1.0 for each action. The index of the probabilities corresponds to the index 
                                                         of the actions in used_actions. If None, uniform distribution is assumed. 
+    
     """
 
     def __init__(
@@ -33,7 +37,7 @@ class ProbabilisticEnvWrapper(gym.Env):
             for l in prob_distribution.values():
                 assert abs(sum(l)-1.0) < 1e-6 
         
-
+        
         self.env = env
         self.used_actions = used_actions if used_actions is not None else [action for action in Actions]
         self.prob_distribution = prob_distribution if prob_distribution is not None else {action: [1/len(self.used_actions) for _ in self.used_actions] for action in self.used_actions}
@@ -46,13 +50,19 @@ class ProbabilisticEnvWrapper(gym.Env):
         self.action_space = env.action_space
         self.observation_space = env.observation_space
         self.metadata = getattr(env, 'metadata', {})
+        #set the own render mode similar to the underlying env. This works best for current use cases, but could be change din the future
+        self.render_mode = getattr(env, 'render_mode', None)
         
     def step(self, action: ActType):
-        # Convert integer action to Actions enum
-        if isinstance(action, (int, np.integer)):
-            action_enum = Actions(action)
+        # Handle all possible action types from PPO and gym
+        if isinstance(action, (int, np.integer, np.ndarray)):
+            action_enum = Actions(int(action))
         else:
             action_enum = action
+
+        #Gymnasium samples from the action_sapce, which always has the size of the Actions enum. Hence, it could sample actions that are not used in the current environment.
+        if action_enum not in self.used_actions:
+            return self.env.step(action_enum.value)  # Calling step with an action that is not used in a minigrid_env will result in no changes. We can spare the probabilistic steps for this, and just let the underlying env handle everything. 
             
         # Choose action index based on probabilities, then get the actual action
         action_idx = np.random.choice(len(self.used_actions), p=self.prob_distribution[action_enum])
