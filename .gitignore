@@ -11,3 +11,7 @@ wheels/
 
 #images from tests/visualizations
 img/
+
+#logs
+*.log
+logs/
