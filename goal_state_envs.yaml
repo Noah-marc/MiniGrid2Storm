@@ -11,9 +11,9 @@ environments:
       render_mode: rgb_array
     actions: [forward, left, right]
     probabilities:
-      forward: [0.8, 0.1, 0.1]
-      left: [0.1, 0.8, 0.1]
-      right: [0.1, 0.1, 0.8]
+      forward: [0.6, 0.2, 0.2]
+      left: [0.2, 0.6, 0.2]
+      right: [0.2, 0.2, 0.6]
 
   - name: DistShiftEnv
     module: minigrid.envs.distshift
@@ -27,7 +27,6 @@ environments:
       forward: [0.8, 0.1, 0.1]
       left: [0.1, 0.8, 0.1]
       right: [0.1, 0.1, 0.8]
-
   # - name: DoorKeyEnv
   #   module: minigrid.envs.doorkey
   #   class: DoorKeyEnv
