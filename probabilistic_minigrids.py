@@ -7,7 +7,7 @@ import copy
 import numpy as np
 import gymnasium as gym
 
-
+from shield import Shield
 
 class ProbabilisticEnvWrapper(gym.Env):
     """
@@ -29,7 +29,8 @@ class ProbabilisticEnvWrapper(gym.Env):
             self,
             env:MiniGridEnv,
             used_actions: list[Actions] = None,
-            prob_distribution: dict[Actions,list[float]]= None
+            prob_distribution: dict[Actions,list[float]]= None,
+            shield: Shield = None,
             ):
         
         if used_actions is not None and prob_distribution is not None:
@@ -41,6 +42,7 @@ class ProbabilisticEnvWrapper(gym.Env):
         self.env = env
         self.used_actions = used_actions if used_actions is not None else [action for action in Actions]
         self.prob_distribution = prob_distribution if prob_distribution is not None else {action: [1/len(self.used_actions) for _ in self.used_actions] for action in self.used_actions}
+        self.shield = shield  # Shield for action verification
         
         #keep track of added lava positions. Used in reset() to restore the lava, so that it stays at the same positions. 
         self.lava_pos:tuple[int,int] | None = None
@@ -59,10 +61,18 @@ class ProbabilisticEnvWrapper(gym.Env):
             action_enum = Actions(int(action))
         else:
             action_enum = action
-
+        
         #Gymnasium samples from the action_sapce, which always has the size of the Actions enum. Hence, it could sample actions that are not used in the current environment.
         if action_enum not in self.used_actions:
             return self.env.step(action_enum.value)  # Calling step with an action that is not used in a minigrid_env will result in no changes. We can spare the probabilistic steps for this, and just let the underlying env handle everything. 
+            
+        #Note that here we do not use hasattr, because the envwrapper overwrites __getattr__ to forward all unimplemented functions to the underlying env. Hence, if self.env has an attribute shield, then the hasattr check might not work as expected
+        if self.has_shield(): 
+            # Convert MiniGrid Actions enum to StormVogel Action format for shield
+            storm_action = self._convert_action_to_storm_format(action_enum)
+            storm_action_result = self.shield.verify_action(self.get_current_state_id(), storm_action)
+            # Convert back to MiniGrid format
+            action_enum = self._convert_action_from_storm_format(storm_action_result)
             
         # Choose action index based on probabilities, then get the actual action
         action_idx = np.random.choice(len(self.used_actions), p=self.prob_distribution[action_enum])
@@ -233,3 +243,32 @@ class ProbabilisticEnvWrapper(gym.Env):
         if (x, y) == tuple(self.env.agent_pos):
             return False
         return True
+    
+    def set_shield(self, shield: Shield):
+        """Set or update the shield for action verification."""
+        self.shield = shield
+    
+    def remove_shield(self):
+        """Remove the current shield (disable shielding)."""
+        self.shield = None
+    
+    def has_shield(self) -> bool:
+        """Check if a shield is currently active."""
+        return self.shield is not None
+    
+    def _convert_action_to_storm_format(self, minigrid_action: Actions):
+        """Convert MiniGrid Actions enum to StormVogel Action format."""
+        from stormvogel.model import Action
+        # Create Action using the static create method which accepts a string
+        return Action.create(minigrid_action.name)
+    
+    def _convert_action_from_storm_format(self, storm_action):
+        """Convert StormVogel Action back to MiniGrid Actions enum."""
+        # Extract the action name from the storm action labels
+        if hasattr(storm_action, 'labels') and storm_action.labels:
+            action_name = list(storm_action.labels)[0]
+            # Convert action name back to Actions enum
+            return Actions[action_name]
+        else:
+            # Fallback: if storm_action is already a MiniGrid Actions enum
+            return storm_action
