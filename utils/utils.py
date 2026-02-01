@@ -81,7 +81,5 @@ def custom_policy_iteration(model: stormvogel.model.Model,
         stormvogel.show(model, layout=layout, scheduler=new, result=dtmc_result)  # type: ignore
     return dtmc_result, new  # type: ignore
 
-def stormvogel_to_minigrid_action(sv_action: StormvogelAction) -> Actions:
-    """Convert StormVogel Action to MiniGrid Actions enum"""
-    action_name = next(iter(sv_action.labels))  # Get the action name string
-    return Actions[action_name]  # Convert to Actions enum
+# Note: Action conversion functions have been moved to action_utils.py
+# Use from_stormvogel_action, to_stormvogel_action, etc. from that module

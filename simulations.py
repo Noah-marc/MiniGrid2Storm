@@ -5,7 +5,7 @@ minigrid environment.
 from stormvogel import Scheduler, Model
 from shield import Shield
 from probabilistic_minigrids import ProbabilisticEnvWrapper
-from utils import stormvogel_to_minigrid_action
+from action_utils import from_stormvogel_action
 
 
 def run_simulation(env: ProbabilisticEnvWrapper, policy:Scheduler, num_episodes: int = 10, shield:Shield = None):
@@ -45,10 +45,7 @@ def run_simulation(env: ProbabilisticEnvWrapper, policy:Scheduler, num_episodes:
             if shield is not None:
                 action = shield.verify_action(current_state, action)
 
-            action = stormvogel_to_minigrid_action(action)
-
-            obs, reward, terminated, truncated, info = env.step(action)
-            step_count += 1            
+            action = from_stormvogel_action(action)
             current_state = env.get_current_state_id()
         
         agent_pos = env.env.agent_pos
