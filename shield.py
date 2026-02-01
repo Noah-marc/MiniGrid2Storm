@@ -23,7 +23,6 @@ class DeltaShield(Shield):
         self.optimal_safety_policy = self.min_probs.scheduler
         
 
-        #FOR DEBUG ONLY
         self.blocked = 0
         self.not_blocked = 0
 
