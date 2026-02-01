@@ -8,7 +8,7 @@ from envs.loader import create_wrapped_env_from_config, load_config
 
 def register_env(config_path: str, version: int = 0):
     """
-    Register a single environment config with Gym.
+    Register a single environment config (wrapped with the ProbabilisticEnvWrapper) with Gym. 
 
     config_path: path to YAML file
     version: gym environment version (e.g. 0 → '-v0')
