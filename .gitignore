@@ -12,6 +12,8 @@ wheels/
 #images from tests/visualizations
 img/
 
-#logs
+# Log files (but keep logs/ directory structure)
 *.log
-logs/
+logs/*.log
+logs/**/*.log
+!logs/.gitkeep
