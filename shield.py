@@ -1,7 +1,10 @@
+import logging
 
 from stormvogel.stormpy_utils.model_checking import model_checking
 from minigrid.core.actions import Actions
 from stormvogel.model import Action, Model
+
+logger = logging.getLogger(__name__)
 
 class Shield: 
 
@@ -25,6 +28,8 @@ class DeltaShield(Shield):
 
         self.blocked = 0
         self.not_blocked = 0
+        
+        logger.info(f"DeltaShield initialized with delta={delta}, safety_property='{safety_property}'")
 
     def _action_value(self, state:int, action:Action): 
         """ Compute the value of taking action in state."""
@@ -58,7 +63,11 @@ class DeltaShield(Shield):
             self.not_blocked += 1
             return action
         else:
-            self.blocked += 1 
-            return self.optimal_safety_policy.get_choice_of_state(state)
+            self.blocked += 1
+            alternative_action = self.optimal_safety_policy.get_choice_of_state(state)
+            logger.info(f"Action BLOCKED - State: {state}, RequestedAction: {action.name if hasattr(action, 'name') else action}, "
+                       f"ActionValue: {act_val:.4f}, OptimalValue: {optimal_act_val:.4f}, Delta*ActionValue: {self.delta * act_val:.4f}, "
+                       f"AlternativeAction: {alternative_action.labels if hasattr(alternative_action, 'labels') else alternative_action}")
+            return alternative_action
 
 
