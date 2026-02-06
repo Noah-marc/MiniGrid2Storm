@@ -5,7 +5,7 @@ minigrid environment.
 from stormvogel import Scheduler, Model
 from shield import Shield
 from probabilistic_minigrids import ProbabilisticEnvWrapper
-from action_utils import from_stormvogel_action
+from utils.action_utils import from_stormvogel_action
 
 
 def run_simulation(env: ProbabilisticEnvWrapper, policy:Scheduler, num_episodes: int = 10, shield:Shield = None):
