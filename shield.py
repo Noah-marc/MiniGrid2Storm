@@ -61,11 +61,13 @@ class DeltaShield(Shield):
         optimal_act_val = self.min_probs.values[state]
         if self.delta * act_val <= optimal_act_val:
             self.not_blocked += 1
+            logger.debug(f"Action allowed - State: {state}, Action: {action.name if hasattr(action, 'name') else action}, "
+                        f"ActionValue: {act_val:.4f}, OptimalValue: {optimal_act_val:.4f}, Delta*ActionValue: {self.delta * act_val:.4f}")
             return action
         else:
             self.blocked += 1
             alternative_action = self.optimal_safety_policy.get_choice_of_state(state)
-            logger.info(f"Action BLOCKED - State: {state}, RequestedAction: {action.name if hasattr(action, 'name') else action}, "
+            logger.debug(f"Action BLOCKED - State: {state}, RequestedAction: {action.name if hasattr(action, 'name') else action}, "
                        f"ActionValue: {act_val:.4f}, OptimalValue: {optimal_act_val:.4f}, Delta*ActionValue: {self.delta * act_val:.4f}, "
                        f"AlternativeAction: {alternative_action.labels if hasattr(alternative_action, 'labels') else alternative_action}")
             return alternative_action
