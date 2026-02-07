@@ -16,4 +16,5 @@ img/
 *.log
 logs/*.log
 logs/**/*.log
+logs/*
 !logs/.gitkeep
