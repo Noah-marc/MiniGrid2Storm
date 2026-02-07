@@ -4,7 +4,6 @@ class: LavaGapEnv
 class_params:
   size: 8
   render_mode: rgb_array
-  max_steps: 500
 actions: [forward, left, right]
 probabilities:
   forward: [0.8, 0.1, 0.1]  # High success rate
