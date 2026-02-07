@@ -3,6 +3,7 @@ module: minigrid.envs.blockedunlockpickup
 class: BlockedUnlockPickupEnv
 class_params:
   render_mode: null
+  max_steps: 500
 actions: [forward, left, right, pickup, toggle]
 probabilities:
   forward: [0.6, 0.1, 0.1, 0.1, 0.1]

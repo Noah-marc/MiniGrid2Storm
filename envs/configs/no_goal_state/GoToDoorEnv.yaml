@@ -3,6 +3,7 @@ module: minigrid.envs.gotodoor
 class: GoToDoorEnv
 class_params:
   render_mode: rgb_array
+  max_steps: 500
 actions: [forward, left, right, done]
 probabilities:
   forward: [0.7, 0.1, 0.1, 0.1]
