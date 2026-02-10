@@ -1,0 +1,11 @@
+name: LavaGapEnv
+module: minigrid.envs.lavagap
+class: LavaGapEnv
+class_params:
+  size: 8
+  render_mode: rgb_array
+actions: [forward, left, right]
+probabilities:
+  forward: [0.8, 0.1, 0.1]  # High success rate
+  left: [0.1, 0.8, 0.1]
+  right: [0.1, 0.1, 0.8]
