@@ -34,12 +34,15 @@ from envs.registry import register_env
 OUTPUT_DIR = project_root / "experiments" / "1.0"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-# Discover goal_state environments from config files
-GOAL_STATE_CONFIG_DIR = project_root / "envs" / "configs" / "goal_state"
+# List of goal_state environments to train
 GOAL_STATE_ENVS = [
-    f.stem for f in GOAL_STATE_CONFIG_DIR.glob("*.yaml")
+    "CrossingEnv",
+    "DistShiftEnv",
+    # "FourRoomsEnv",
+    "LavagapEnv",
+    # "LockedRoomEnv",
+    # "MultiRoomEnv",
 ]
-GOAL_STATE_ENVS.sort()  # Sort for consistent ordering
 
 # Training configuration
 TOTAL_TIMESTEPS = 200000  # 2e5
