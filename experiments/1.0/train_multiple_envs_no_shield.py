@@ -31,7 +31,7 @@ from PIL import Image
 from envs.registry import register_env
 
 # Define output directory (relative to project root)
-OUTPUT_DIR = project_root / "experiments" / "1.0"
+OUTPUT_DIR = project_root / "experiments" / "1.0" / "unshielded"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # List of goal_state environments to train
