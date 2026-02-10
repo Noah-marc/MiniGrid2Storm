@@ -36,12 +36,12 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # List of goal_state environments to train
 GOAL_STATE_ENVS = [
-    # "CrossingEnv",
-    # "DistShiftEnv",
-    # "FourRoomsEnv",
+    "CrossingEnv",
+    "DistShiftEnv",
+    "FourRoomsEnv",
     "LavaGapEnv",
-    # "LockedRoomEnv",
-    # "MultiRoomEnv",
+    "LockedRoomEnv",
+    "MultiRoomEnv",
 ]
 
 # Training configuration
