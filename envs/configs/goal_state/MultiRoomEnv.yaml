@@ -6,7 +6,7 @@ class_params:
   maxRoomSize: 8
   minNumRooms: 3
   maxNumRooms: 3
-  max_steps: 500
+  max_steps: 200
 actions: [forward, left, right, toggle]
 probabilities:
   forward: [0.7, 0.1, 0.1, 0.1]
