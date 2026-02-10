@@ -20,9 +20,9 @@ import torch.nn as nn
 from stable_baselines3 import PPO
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 from stable_baselines3.common.logger import configure
-from stable_baselines3.common.monitor import load_results
 from minigrid.wrappers import ImgObsWrapper, ReseedWrapper
 import matplotlib.pyplot as plt
+import pandas as pd
 import matplotlib
 matplotlib.use('Agg')  # Use non-interactive backend for saving plots
 import numpy as np
@@ -36,10 +36,10 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # List of goal_state environments to train
 GOAL_STATE_ENVS = [
-    "CrossingEnv",
-    "DistShiftEnv",
+    # "CrossingEnv",
+    # "DistShiftEnv",
     # "FourRoomsEnv",
-    "LavagapEnv",
+    "LavaGapEnv",
     # "LockedRoomEnv",
     # "MultiRoomEnv",
 ]
@@ -79,32 +79,24 @@ class MinigridFeaturesExtractor(BaseFeaturesExtractor):
 def plot_training_results(log_dir: Path, env_name: str, output_path: Path):
     """Load training results and create performance plots."""
     try:
-        df = load_results(str(log_dir))
+        # Read progress.csv from PPO logger (same approach as notebook)
+        progress_file = log_dir / "progress.csv"
+        df = pd.read_csv(progress_file)
         
         fig, axes = plt.subplots(1, 2, figsize=(14, 5))
         
-        # Plot 1: Episode rewards
-        axes[0].plot(df['r'], alpha=0.3, label='Raw rewards', linewidth=0.5)
-        # Add rolling average for smoother plot
-        window_size = 100
-        if len(df) >= window_size:
-            rolling_mean = df['r'].rolling(window=window_size).mean()
-            axes[0].plot(rolling_mean, linewidth=2, label=f'Rolling mean ({window_size} episodes)')
-        axes[0].set_xlabel('Episode')
-        axes[0].set_ylabel('Reward')
+        # Plot 1: Episode reward mean over timesteps
+        axes[0].plot(df['time/total_timesteps'], df['rollout/ep_rew_mean'], linewidth=2)
+        axes[0].set_xlabel('Timesteps')
+        axes[0].set_ylabel('Episode Reward (mean)')
         axes[0].set_title(f'{env_name}: Training Rewards Over Time')
-        axes[0].legend()
         axes[0].grid(True, alpha=0.3)
         
-        # Plot 2: Episode lengths
-        axes[1].plot(df['l'], alpha=0.3, label='Raw lengths', linewidth=0.5)
-        if len(df) >= window_size:
-            rolling_mean_len = df['l'].rolling(window=window_size).mean()
-            axes[1].plot(rolling_mean_len, linewidth=2, label=f'Rolling mean ({window_size} episodes)')
-        axes[1].set_xlabel('Episode')
-        axes[1].set_ylabel('Episode Length (steps)')
+        # Plot 2: Episode length mean over timesteps
+        axes[1].plot(df['time/total_timesteps'], df['rollout/ep_len_mean'], linewidth=2)
+        axes[1].set_xlabel('Timesteps')
+        axes[1].set_ylabel('Episode Length (mean)')
         axes[1].set_title(f'{env_name}: Episode Lengths Over Time')
-        axes[1].legend()
         axes[1].grid(True, alpha=0.3)
         
         plt.tight_layout()
@@ -113,15 +105,15 @@ def plot_training_results(log_dir: Path, env_name: str, output_path: Path):
         
         # Print summary statistics
         print(f"\n  Training Summary:")
-        print(f"    Total episodes: {len(df)}")
-        print(f"    Mean reward: {df['r'].mean():.2f} ± {df['r'].std():.2f}")
-        print(f"    Mean episode length: {df['l'].mean():.2f} ± {df['l'].std():.2f}")
-        print(f"    Best reward: {df['r'].max():.2f}")
-        if len(df) >= 100:
-            print(f"    Final 100 episodes mean reward: {df['r'].tail(100).mean():.2f}")
+        print(f"    Total timesteps: {df['time/total_timesteps'].iloc[-1]:.0f}")
+        print(f"    Final episode reward (mean): {df['rollout/ep_rew_mean'].iloc[-1]:.2f}")
+        print(f"    Final episode length (mean): {df['rollout/ep_len_mean'].iloc[-1]:.2f}")
+        print(f"    Best episode reward (mean): {df['rollout/ep_rew_mean'].max():.2f}")
         
     except Exception as e:
         print(f"  Error creating plot: {e}")
+        import traceback
+        traceback.print_exc()
 
 
 def save_env_image(env, env_name: str, output_path: Path):
