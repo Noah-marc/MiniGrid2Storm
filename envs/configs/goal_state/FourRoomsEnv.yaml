@@ -3,7 +3,7 @@ module: minigrid.envs.fourrooms
 class: FourRoomsEnv
 class_params:
   render_mode: rgb_array
-  max_steps: 200
+  max_steps: 2000
 actions: [forward, left, right]
 probabilities:
   forward: [0.8, 0.1, 0.1]
