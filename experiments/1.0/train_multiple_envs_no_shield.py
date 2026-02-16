@@ -46,10 +46,11 @@ GOAL_STATE_ENVS = [
 ]
 
 # Training configuration
-TOTAL_TIMESTEPS = 1000000  # 1e6
+TOTAL_TIMESTEPS = 5_000_000  # 5e6
 FEATURES_DIM = 128
 FIXED_SEED = 42
-NUM_ENVS = 4  # Number of parallel environments
+NUM_ENVS = 24  # Number of parallel environments
+BATCH_SIZE = 256  # Batch size for PPO
 
 
 class MinigridFeaturesExtractor(BaseFeaturesExtractor):
@@ -220,6 +221,7 @@ def train_environment(env_name: str):
         env, 
         policy_kwargs=policy_kwargs, 
         verbose=1,
+        batch_size=BATCH_SIZE
     )
     model.set_logger(ppo_logger)
     
