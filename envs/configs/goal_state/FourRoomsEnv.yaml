@@ -6,6 +6,6 @@ class_params:
   max_steps: 2000
 actions: [forward, left, right]
 probabilities:
-  forward: [0.8, 0.1, 0.1]
-  left: [0.1, 0.8, 0.1]
-  right: [0.1, 0.1, 0.8]
+  forward: [0.99, 0.005, 0.005]
+  left: [0.005, 0.99, 0.005]
+  right: [0.005, 0.005, 0.99]
