@@ -20,6 +20,7 @@ import torch.nn as nn
 from stable_baselines3 import PPO
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 from stable_baselines3.common.logger import configure
+from stable_baselines3.common.vec_env import DummyVecEnv
 from minigrid.wrappers import ImgObsWrapper, ReseedWrapper
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -48,6 +49,7 @@ GOAL_STATE_ENVS = [
 TOTAL_TIMESTEPS = 1000000  # 1e6
 FEATURES_DIM = 128
 FIXED_SEED = 42
+NUM_ENVS = 4  # Number of parallel environments
 
 
 class MinigridFeaturesExtractor(BaseFeaturesExtractor):
@@ -151,7 +153,7 @@ def save_env_image(env, env_name: str, output_path: Path):
         env.reset()
         # Access the unwrapped environment to render properly
         # The ReseedWrapper and ImgObsWrapper don't have render, so go to base env
-        base_env = env.unwrapped.env
+        base_env = env.env
         rgb_array = base_env.render()
         if rgb_array is not None:
             # Save as image
@@ -182,20 +184,25 @@ def train_environment(env_name: str):
     plot_path = env_dir / f"{env_name}_training_plot.png"
     env_image_path = env_dir / f"{env_name}_environment.png"
     
-    # Register and create environment
-    print(f"\n1. Setting up environment...")
+    # Register and create environments
+    print(f"\n1. Setting up {NUM_ENVS} environments...")
     register_env(f"./envs/configs/goal_state/{env_name}.yaml")
     
-    env = gym.make(f"{env_name}-v0")
-    env = ImgObsWrapper(env)
-    env = ReseedWrapper(env, seeds=[FIXED_SEED])
-    env.unwrapped.add_lava()
+    def make_env():
+        env = gym.make(f"{env_name}-v0")
+        env = ImgObsWrapper(env)
+        env = ReseedWrapper(env, seeds=[FIXED_SEED])
+        env.unwrapped.add_lava()
+        return env
     
-    print(f"   Environment created and wrapped")
+    # Create vectorized environment
+    env = DummyVecEnv([make_env for _ in range(NUM_ENVS)])
     
-    # Save environment image
+    print(f"   {NUM_ENVS} environments created and wrapped in DummyVecEnv")
+    
+    # Save environment image (using first environment from the vectorized env)
     print(f"\n2. Saving environment image...")
-    save_env_image(env, env_name, env_image_path)
+    save_env_image(env.get_attr('unwrapped')[0], env_name, env_image_path)
     
     # Setup policy
     print(f"\n3. Configuring PPO policy...")
