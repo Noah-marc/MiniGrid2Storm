@@ -339,7 +339,7 @@ def train_environment(env_name: str):
     
     # Create callback to disable shield at threshold
     shield_callback = ShieldHardCutoffCallback(
-        nr_episodes=10, 
+        nr_episodes=100, 
         threshold=REWARD_THRESHOLD,
         verbose=1
     )
