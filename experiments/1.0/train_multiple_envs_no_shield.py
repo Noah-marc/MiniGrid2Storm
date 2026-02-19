@@ -32,17 +32,17 @@ from PIL import Image
 from envs.registry import register_env
 
 # Define output directory (relative to project root)
-OUTPUT_DIR = project_root / "experiments" / "1.0" / "unshielded2"
+OUTPUT_DIR = project_root / "experiments" / "1.0" / "unshielded3"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # List of goal_state environments to train
 GOAL_STATE_ENVS = [
-    # "CrossingEnv",
-    # "DistShiftEnv",
+    "CrossingEnv",
+    "DistShiftEnv",
     "FourRoomsEnv",
-    # "LavaGapEnv",
-    # "LockedRoomEnv",
-    # "MultiRoomEnv",
+    "LavaGapEnv",
+    "LockedRoomEnv",
+    "MultiRoomEnv",
 ]
 
 # Training configuration
