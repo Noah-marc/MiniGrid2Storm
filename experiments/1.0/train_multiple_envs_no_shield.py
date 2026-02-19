@@ -20,7 +20,7 @@ import torch.nn as nn
 from stable_baselines3 import PPO
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 from stable_baselines3.common.logger import configure
-from stable_baselines3.common.vec_env import DummyVecEnv
+from stable_baselines3.common.vec_env import DummyVecEnv, VecMonitor
 from minigrid.wrappers import ImgObsWrapper, ReseedWrapper
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -199,7 +199,10 @@ def train_environment(env_name: str):
     # Create vectorized environment
     env = DummyVecEnv([make_env for _ in range(NUM_ENVS)])
     
-    print(f"   {NUM_ENVS} environments created and wrapped in DummyVecEnv")
+    # Add monitoring to track episode statistics for logging
+    env = VecMonitor(env, filename=str(log_dir / "monitor"))
+    
+    print(f"   {NUM_ENVS} environments created and wrapped in DummyVecEnv with VecMonitor")
     
     # Save environment image (using first environment from the vectorized env)
     print(f"\n2. Saving environment image...")
