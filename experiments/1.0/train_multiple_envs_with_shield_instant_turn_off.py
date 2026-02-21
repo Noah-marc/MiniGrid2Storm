@@ -206,34 +206,70 @@ def plot_training_results(log_dir: Path, env_name: str, output_path: Path, shiel
         progress_file = log_dir / "progress.csv"
         df = pd.read_csv(progress_file)
         
-        fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+        fig, axes = plt.subplots(2, 2, figsize=(14, 10))
         
         # Plot 1: Episode reward mean over timesteps
-        axes[0].plot(df['time/total_timesteps'], df['rollout/ep_rew_mean'], linewidth=2)
+        axes[0, 0].plot(df['time/total_timesteps'], df['rollout/ep_rew_mean'], linewidth=2)
         
         # Add vertical line where shield was disabled
         if shield_disable_timestep is not None:
-            axes[0].axvline(x=shield_disable_timestep, color='red', linestyle='--', 
+            axes[0, 0].axvline(x=shield_disable_timestep, color='red', linestyle='--', 
                           linewidth=2, label=f'Shield disabled')
-            axes[0].legend()
+            axes[0, 0].legend()
         
-        axes[0].set_xlabel('Timesteps')
-        axes[0].set_ylabel('Episode Reward (mean)')
-        axes[0].set_title(f'{env_name}: Training Rewards Over Time (With Shield)')
-        axes[0].grid(True, alpha=0.3)
+        axes[0, 0].set_xlabel('Timesteps')
+        axes[0, 0].set_ylabel('Episode Reward (mean)')
+        axes[0, 0].set_title(f'{env_name}: Training Rewards Over Time (With Shield)')
+        axes[0, 0].grid(True, alpha=0.3)
         
         # Plot 2: Episode length mean over timesteps
-        axes[1].plot(df['time/total_timesteps'], df['rollout/ep_len_mean'], linewidth=2)
+        axes[0, 1].plot(df['time/total_timesteps'], df['rollout/ep_len_mean'], linewidth=2)
         
         if shield_disable_timestep is not None:
-            axes[1].axvline(x=shield_disable_timestep, color='red', linestyle='--', 
+            axes[0, 1].axvline(x=shield_disable_timestep, color='red', linestyle='--', 
                           linewidth=2, label=f'Shield disabled')
-            axes[1].legend()
+            axes[0, 1].legend()
         
-        axes[1].set_xlabel('Timesteps')
-        axes[1].set_ylabel('Episode Length (mean)')
-        axes[1].set_title(f'{env_name}: Episode Lengths Over Time (With Shield)')
-        axes[1].grid(True, alpha=0.3)
+        axes[0, 1].set_xlabel('Timesteps')
+        axes[0, 1].set_ylabel('Episode Length (mean)')
+        axes[0, 1].set_title(f'{env_name}: Episode Lengths Over Time (With Shield)')
+        axes[0, 1].grid(True, alpha=0.3)
+        
+        # Plot 3: KL divergence over timesteps
+        if 'train/approx_kl' in df.columns:
+            axes[1, 0].plot(df['time/total_timesteps'], df['train/approx_kl'], linewidth=2, color='orange')
+            
+            if shield_disable_timestep is not None:
+                axes[1, 0].axvline(x=shield_disable_timestep, color='red', linestyle='--', 
+                              linewidth=2, label=f'Shield disabled')
+                axes[1, 0].legend()
+            
+            axes[1, 0].set_xlabel('Timesteps')
+            axes[1, 0].set_ylabel('Approx KL Divergence')
+            axes[1, 0].set_title(f'{env_name}: KL Divergence Over Time')
+            axes[1, 0].grid(True, alpha=0.3)
+        else:
+            axes[1, 0].text(0.5, 0.5, 'KL Divergence data not available', 
+                          ha='center', va='center', transform=axes[1, 0].transAxes)
+            axes[1, 0].set_title(f'{env_name}: KL Divergence Over Time')
+        
+        # Plot 4: Entropy over timesteps
+        if 'train/entropy_loss' in df.columns:
+            axes[1, 1].plot(df['time/total_timesteps'], df['train/entropy_loss'], linewidth=2, color='green')
+            
+            if shield_disable_timestep is not None:
+                axes[1, 1].axvline(x=shield_disable_timestep, color='red', linestyle='--', 
+                              linewidth=2, label=f'Shield disabled')
+                axes[1, 1].legend()
+            
+            axes[1, 1].set_xlabel('Timesteps')
+            axes[1, 1].set_ylabel('Entropy Loss')
+            axes[1, 1].set_title(f'{env_name}: Entropy Loss Over Time')
+            axes[1, 1].grid(True, alpha=0.3)
+        else:
+            axes[1, 1].text(0.5, 0.5, 'Entropy data not available', 
+                          ha='center', va='center', transform=axes[1, 1].transAxes)
+            axes[1, 1].set_title(f'{env_name}: Entropy Loss Over Time')
         
         plt.tight_layout()
         plt.savefig(output_path, dpi=150, bbox_inches='tight')
