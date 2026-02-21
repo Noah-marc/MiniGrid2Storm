@@ -52,11 +52,11 @@ GOAL_STATE_ENVS = [
 ]
 
 # Training configuration
-TOTAL_TIMESTEPS = 1000000  # 1M
+TOTAL_TIMESTEPS = 5_000_000  # 5e6
 FEATURES_DIM = 128
 FIXED_SEED = 42
-NUM_ENVS = 4  # Number of parallel environments
-BATCH_SIZE = 256
+NUM_ENVS = 24  # Number of parallel environments
+BATCH_SIZE = 256  # Batch size for PPO
 
 # Shield configuration - gradual reduction schedule
 INITIAL_DELTA = 0.9  # Start with high protection
@@ -569,6 +569,7 @@ def main():
     print(f"Environments found: {', '.join(GOAL_STATE_ENVS)}")
     print(f"Timesteps per environment: {TOTAL_TIMESTEPS:,.0f}")
     print(f"Fixed seed: {FIXED_SEED}")
+    print(f"Parallel environments per training: {NUM_ENVS}")
     print(f"Initial delta: {INITIAL_DELTA}")
     print(f"Shield mechanism: {SHIELD_MECHANISM}")
     

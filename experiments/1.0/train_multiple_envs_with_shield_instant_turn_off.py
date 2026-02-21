@@ -23,6 +23,7 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 from stable_baselines3.common.logger import configure
 from stable_baselines3.common.callbacks import BaseCallback
+from stable_baselines3.common.vec_env import DummyVecEnv, VecMonitor
 from minigrid.wrappers import ImgObsWrapper, ReseedWrapper
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -51,9 +52,11 @@ GOAL_STATE_ENVS = [
 ]
 
 # Training configuration
-TOTAL_TIMESTEPS = 200000  # 2e5
+TOTAL_TIMESTEPS = 5_000_000  # 5e6
 FEATURES_DIM = 128
 FIXED_SEED = 42
+NUM_ENVS = 24  # Number of parallel environments
+BATCH_SIZE = 256  # Batch size for PPO
 
 # Shield configuration
 SHIELD_DELTA = 0.5  # Delta parameter for DeltaShield
@@ -149,17 +152,18 @@ class ShieldHardCutoffCallback(BaseCallback):
 
                         # Update empirical reference reward
                         if mean_rew > self.threshold:
-                            # Access the actual environment through the vectorized wrapper
-                            # self.training_env is a DummyVecEnv, need to get env 0
-                            env = self.training_env.envs[0]
-                            # Unwrap through wrappers until we reach ProbabilisticEnvWrapper
-                            while hasattr(env, 'env') and not isinstance(env, ProbabilisticEnvWrapper):
-                                env = env.env
-                            # Now we have the ProbabilisticEnvWrapper
-                            if isinstance(env, ProbabilisticEnvWrapper):
-                                env.remove_shield()
-                            else:
-                                raise RuntimeError("Could not find ProbabilisticEnvWrapper to remove shield")
+                            # Access all environments in the vectorized wrapper and disable shields
+                            vec_env = self.training_env
+                            for i in range(vec_env.num_envs):
+                                env = vec_env.envs[i]
+                                # Unwrap through wrappers until we reach ProbabilisticEnvWrapper
+                                while hasattr(env, 'env') and not isinstance(env, ProbabilisticEnvWrapper):
+                                    env = env.env
+                                # Now we have the ProbabilisticEnvWrapper
+                                if isinstance(env, ProbabilisticEnvWrapper):
+                                    env.remove_shield()
+                                else:
+                                    raise RuntimeError(f"Could not find ProbabilisticEnvWrapper in env {i} to remove shield")
                             
                             self.shield_active = False
                             self.cutoff_timestep = self.num_timesteps
@@ -328,32 +332,36 @@ def train_environment(env_name: str):
     plot_path = env_dir / f"{env_name}_training_plot_shielded.png"
     env_image_path = env_dir / f"{env_name}_environment.png"
     
-    # Register and create environment
-    print(f"\n1. Setting up environment...")
+    # Register and create environments
+    print(f"\n1. Setting up {NUM_ENVS} environments...")
     register_env(f"./envs/configs/goal_state/{env_name}.yaml")
     
-    env = gym.make(f"{env_name}-v0")
-    env = ImgObsWrapper(env)
-    env = ReseedWrapper(env, seeds=[FIXED_SEED])
-    env.unwrapped.add_lava()
+    def make_env():
+        env = gym.make(f"{env_name}-v0")
+        env = ImgObsWrapper(env)
+        env = ReseedWrapper(env, seeds=[FIXED_SEED])
+        env.unwrapped.add_lava()
+        
+        # Add shield with configured delta
+        shield = DeltaShield(SHIELD_DELTA)
+        env = ProbabilisticEnvWrapper(env, shield)
+        
+        return env
     
-    print(f"   Environment created and wrapped")
+    # Create vectorized environment
+    env = DummyVecEnv([make_env for _ in range(NUM_ENVS)])
     
-    # Setup shield
-    print(f"\n2. Setting up DeltaShield...")
-    env.reset()
-    model, _ = env.unwrapped.convert_to_probabilistic_storm()
-    shield = DeltaShield(model, "Pmin=? [F \"lava\"]", delta=SHIELD_DELTA)
-    env.unwrapped.set_shield(shield)
-    print(f"   Shield configured with delta={SHIELD_DELTA}")
-    print(f"   Shield will be disabled when mean reward >= {REWARD_THRESHOLD}")
+    # Add monitoring to track episode statistics for logging
+    env = VecMonitor(env, filename=str(log_dir / "monitor"))
     
-    # Save environment image
-    print(f"\n3. Saving environment image...")
-    save_env_image(env, env_name, env_image_path)
+    print(f"   {NUM_ENVS} environments created with shield (δ={SHIELD_DELTA})")
+    
+    # Save environment image (using first environment from the vectorized env)
+    print(f"\n2. Saving environment image...")
+    save_env_image(env.get_attr('unwrapped')[0], env_name, env_image_path)
     
     # Setup policy
-    print(f"\n4. Configuring PPO policy...")
+    print(f"\n3. Configuring PPO policy...")
     policy_kwargs = dict(
         features_extractor_class=MinigridFeaturesExtractor,
         features_extractor_kwargs=dict(features_dim=FEATURES_DIM),
@@ -368,6 +376,7 @@ def train_environment(env_name: str):
         env, 
         policy_kwargs=policy_kwargs, 
         verbose=1,
+        batch_size=BATCH_SIZE
     )
     model.set_logger(ppo_logger)
     
@@ -381,17 +390,17 @@ def train_environment(env_name: str):
     )
     
     # Train
-    print(f"\n5. Training for {TOTAL_TIMESTEPS:,.0f} timesteps...")
+    print(f"\n4. Training for {TOTAL_TIMESTEPS:,.0f} timesteps...")
     print(f"   Monitoring for {shield_callback.nr_episodes} episodes mean reward threshold to disable shield...")
     model.learn(total_timesteps=TOTAL_TIMESTEPS, callback=shield_callback)
     
     # Save policy
-    print(f"\n6. Saving trained policy...")
+    print(f"\n5. Saving trained policy...")
     model.save(str(policy_path))
     print(f"   Policy saved to: {policy_path}")
     
     # Create performance plot
-    print(f"\n7. Creating performance plot...")
+    print(f"\n6. Creating performance plot..."))
     plot_training_results(
         log_dir, 
         env_name, 
@@ -418,6 +427,7 @@ def main():
     print(f"Environments: {', '.join(GOAL_STATE_ENVS)}")
     print(f"Timesteps per environment: {TOTAL_TIMESTEPS:,.0f}")
     print(f"Fixed seed: {FIXED_SEED}")
+    print(f"Parallel environments per training: {NUM_ENVS}")
     print(f"\nShield configuration:")
     print(f"  - Type: DeltaShield")
     print(f"  - Delta: {SHIELD_DELTA}")

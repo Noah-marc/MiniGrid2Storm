@@ -260,6 +260,7 @@ def main():
     print(f"Environments found: {', '.join(GOAL_STATE_ENVS)}")
     print(f"Timesteps per environment: {TOTAL_TIMESTEPS:,.0f}")
     print(f"Fixed seed: {FIXED_SEED}")
+    print(f"Parallel environments per training: {NUM_ENVS}")
     
     successful = []
     failed = []
