@@ -400,7 +400,7 @@ def train_environment(env_name: str):
     print(f"   Policy saved to: {policy_path}")
     
     # Create performance plot
-    print(f"\n6. Creating performance plot..."))
+    print(f"\n6. Creating performance plot...")
     plot_training_results(
         log_dir, 
         env_name, 
