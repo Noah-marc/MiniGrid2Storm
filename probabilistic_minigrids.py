@@ -61,6 +61,10 @@ class ProbabilisticEnvWrapper(gym.Env):
         #set the own render mode similar to the underlying env. This works best for current use cases, but could be change din the future
         self.render_mode = getattr(env, 'render_mode', None)
         
+    def render(self): 
+        """ Although the wrapped env does have a render function, we need to explicitly define our own render function as the wrapper is an gymnasium env. This is probably should be changed in the future, but for now allows using the exisiting render method"""
+        return self.env.render()
+    
     def step(self, action: ActType):
         # Handle all possible action types from PPO and gym
         if isinstance(action, (int, np.integer, np.ndarray)):
