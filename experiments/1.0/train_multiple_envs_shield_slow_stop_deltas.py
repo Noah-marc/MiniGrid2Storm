@@ -265,7 +265,7 @@ class GradualShieldReductionCallback(BaseCallback):
                             else:
                                 # Recreate shield with new delta if needed
                                 env.reset()
-                                model, _ = env.env.unwrapped.convert_to_probabilistic_storm()
+                                model, _ = env.convert_to_probabilistic_storm()
                                 new_shield = DeltaShield(model, "Pmin=? [F \"lava\"]", delta=new_value)
                                 env.set_shield(new_shield)
                     
@@ -521,11 +521,13 @@ def train_environment(env_name: str):
         env = ImgObsWrapper(env)
         env = ReseedWrapper(env, seeds=[FIXED_SEED])
         env.unwrapped.add_lava()
-        
-        # Add shield with initial delta
-        shield = DeltaShield(INITIAL_DELTA)
-        env = ProbabilisticEnvWrapper(env, shield)
-        
+
+        # Build Storm model on the wrapper, then attach shield
+        env.reset()
+        model, _ = env.unwrapped.convert_to_probabilistic_storm()
+        shield = DeltaShield(model, "Pmin=? [F \"lava\"]", delta=INITIAL_DELTA)
+        env.unwrapped.set_shield(shield)
+
         return env
     
     # Create vectorized environment

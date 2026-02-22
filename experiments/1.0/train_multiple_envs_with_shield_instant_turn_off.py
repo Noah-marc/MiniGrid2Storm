@@ -383,7 +383,7 @@ def train_environment(env_name: str):
         env.reset()
         model, _ = env.unwrapped.convert_to_probabilistic_storm()
         shield = DeltaShield(model, "Pmin=? [F \"lava\"]", delta=SHIELD_DELTA)
-        env = ProbabilisticEnvWrapper(env, shield)
+        env.unwrapped.set_shield(shield)
         
         return env
     
