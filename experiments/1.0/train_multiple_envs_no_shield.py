@@ -20,7 +20,7 @@ import torch.nn as nn
 from stable_baselines3 import PPO
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 from stable_baselines3.common.logger import configure
-from stable_baselines3.common.vec_env import DummyVecEnv, VecMonitor
+from stable_baselines3.common.vec_env import DummyVecEnv, VecMonitor, VecVideoRecorder
 from minigrid.wrappers import ImgObsWrapper, ReseedWrapper
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -51,6 +51,40 @@ FEATURES_DIM = 128
 FIXED_SEED = 42
 NUM_ENVS = 24  # Number of parallel environments
 BATCH_SIZE = 256  # Batch size for PPO
+
+# Video recording configuration
+# Timesteps at which to record a clip (total training timesteps, not vectorized steps)
+RECORDING_TIMESTEPS = [
+    5_000,        # Very beginning
+    500_000,      # Mid first million
+    950_000,      # Towards end of first million
+    1_000_000,    # 1M
+    2_000_000,    # 2M
+    3_000_000,    # 3M
+    4_000_000,    # 4M
+    5_000_000,    # End
+]
+VIDEO_LENGTH = 200  # Max frames per clip
+
+
+def make_video_trigger(recording_timesteps: list, num_envs: int):
+    """
+    Returns a trigger function for VecVideoRecorder based on total timesteps.
+    VecVideoRecorder passes step_id (vectorized step count) to the trigger;
+    total_timesteps = step_id * num_envs.
+    """
+    triggered = set()
+    tolerance = num_envs * 4  # Window wide enough to catch the target between steps
+
+    def trigger(step_id: int) -> bool:
+        total_ts = step_id * num_envs
+        for ts in recording_timesteps:
+            if ts not in triggered and ts <= total_ts <= ts + tolerance:
+                triggered.add(ts)
+                return True
+        return False
+
+    return trigger
 
 
 class MinigridFeaturesExtractor(BaseFeaturesExtractor):
@@ -182,6 +216,8 @@ def train_environment(env_name: str):
     policy_path = env_dir / f"PPO_{env_name}"
     log_dir = env_dir / "ppo_logs"
     log_dir.mkdir(parents=True, exist_ok=True)
+    video_dir = env_dir / "videos"
+    video_dir.mkdir(parents=True, exist_ok=True)
     plot_path = env_dir / f"{env_name}_training_plot.png"
     env_image_path = env_dir / f"{env_name}_environment.png"
     
@@ -201,6 +237,15 @@ def train_environment(env_name: str):
     
     # Add monitoring to track episode statistics for logging
     env = VecMonitor(env, filename=str(log_dir / "monitor"))
+
+    # Add video recording at configured timesteps
+    env = VecVideoRecorder(
+        env,
+        video_folder=str(video_dir),
+        record_video_trigger=make_video_trigger(RECORDING_TIMESTEPS, NUM_ENVS),
+        video_length=VIDEO_LENGTH,
+        name_prefix=env_name,
+    )
     
     print(f"   {NUM_ENVS} environments created and wrapped in DummyVecEnv with VecMonitor")
     
