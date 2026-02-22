@@ -342,8 +342,10 @@ def train_environment(env_name: str):
         env = ReseedWrapper(env, seeds=[FIXED_SEED])
         env.unwrapped.add_lava()
         
-        # Add shield with configured delta
-        shield = DeltaShield(SHIELD_DELTA)
+        # Create shield with Storm model and safety property
+        env.reset()
+        model, _ = env.unwrapped.convert_to_probabilistic_storm()
+        shield = DeltaShield(model, "Pmin=? [F \"lava\"]", delta=SHIELD_DELTA)
         env = ProbabilisticEnvWrapper(env, shield)
         
         return env

@@ -229,7 +229,10 @@ class GradualShieldReductionCallback(BaseCallback):
                                 env.shield.delta = new_value
                             else:
                                 # Recreate shield with new delta if needed
-                                env.add_shield(DeltaShield(new_value))
+                                env.reset()
+                                model, _ = env.env.unwrapped.convert_to_probabilistic_storm()
+                                new_shield = DeltaShield(model, "Pmin=? [F \"lava\"]", delta=new_value)
+                                env.set_shield(new_shield)
                     
                     else:  # ignore_prob
                         # Update the ignore_prob in the shield
