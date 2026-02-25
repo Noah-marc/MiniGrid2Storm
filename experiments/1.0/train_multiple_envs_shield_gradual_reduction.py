@@ -38,7 +38,7 @@ from probabilistic_minigrids import ProbabilisticEnvWrapper
 from collections import deque
 
 # Define output directory (relative to project root)
-OUTPUT_DIR = project_root / "experiments" / "1.0" / "shielded_gradual_reduction"
+OUTPUT_DIR = project_root / "experiments" / "1.0" / "shielded_gradual_reduction" / f"{SHIELD_MECHANISM}"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # List of goal_state environments to train
