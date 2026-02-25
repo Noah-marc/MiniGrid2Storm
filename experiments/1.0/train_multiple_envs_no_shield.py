@@ -39,10 +39,7 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 GOAL_STATE_ENVS = [
     "CrossingEnv",
     "DistShiftEnv",
-    "FourRoomsEnv",
     "LavaGapEnv",
-    "LockedRoomEnv",
-    "MultiRoomEnv",
 ]
 
 # Training configuration
