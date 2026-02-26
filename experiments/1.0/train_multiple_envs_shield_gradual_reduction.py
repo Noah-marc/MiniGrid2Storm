@@ -46,7 +46,7 @@ REWARD_THRESHOLDS = [0.0, 0.2, 0.4, 0.6, 0.75, 0.85]  # Performance thresholds f
 IGNORE_PROB_SCHEDULE = [0.0, 0.1, 0.3, 0.5, 0.7, 1.0]  # Gradual increase in ignoring probability
 
 # Shield mechanism selection
-SHIELD_MECHANISM = "delta"  # Options: "delta" or "ignore_prob"
+SHIELD_MECHANISM = "ignore_prob"  # Options: "delta" or "ignore_prob"
 
 # Define output directory (relative to project root)
 OUTPUT_DIR = project_root / "experiments" / "1.0" / "shielded_gradual_reduction" / f"{SHIELD_MECHANISM}"
