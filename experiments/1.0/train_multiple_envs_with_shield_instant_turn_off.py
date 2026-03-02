@@ -71,6 +71,9 @@ RECORDING_TIMESTEPS = [
     5_000_000,    # End
 ]
 VIDEO_LENGTH = 200  # Max frames per clip
+SHIELD_DELTA = 0.5  # Delta parameter for DeltaShield
+REWARD_THRESHOLD = 0.7 # Disable shield when mean reward reaches this value
+
 
 
 def make_video_trigger(recording_timesteps: list, num_envs: int):
@@ -91,60 +94,6 @@ def make_video_trigger(recording_timesteps: list, num_envs: int):
         return False
 
     return trigger
-
-
-# Shield configuration
-SHIELD_DELTA = 0.5  # Delta parameter for DeltaShield
-REWARD_THRESHOLD = 0.6  # Disable shield when mean reward reaches this value
-
-
-class ShieldDisablerCallback(BaseCallback):
-    """
-    Custom callback that monitors training progress and disables the shield
-    when the mean episode reward reaches a specified threshold.
-    """
-    
-    def __init__(self, env, reward_threshold: float, verbose: int = 1):
-        super().__init__(verbose)
-        self.env = env
-        self.reward_threshold = reward_threshold
-        self.shield_disabled = False
-        self.disable_timestep = None
-    
-    def _on_step(self) -> bool:
-        """
-        Called after every step. We check if we should disable the shield.
-        Returns True to continue training, False to stop.
-        """
-        # Only check every N steps to avoid overhead (check every rollout)
-        if self.n_calls % 2048 == 0:  # Default PPO n_steps is 2048
-            # Get the mean reward from the logger
-            if len(self.model.ep_info_buffer) > 0:
-                mean_reward = np.mean([ep_info["r"] for ep_info in self.model.ep_info_buffer])
-                
-                # Check if we should disable the shield
-                if not self.shield_disabled and mean_reward >= self.reward_threshold:
-                    self.shield_disabled = True
-                    self.disable_timestep = self.num_timesteps
-                    
-                    # Disable the shield by accessing the unwrapped environment
-                    self.env.unwrapped.remove_shield()
-                    
-                    if self.verbose > 0:
-                        print(f"\n{'='*80}")
-                        print(f"🎯 SHIELD DISABLED at timestep {self.num_timesteps}")
-                        print(f"   Mean reward reached threshold: {mean_reward:.3f} >= {self.reward_threshold}")
-                        print(f"   Continuing training without shield...")
-                        print(f"{'='*80}\n")
-        
-        return True  # Continue training
-    
-    def _on_training_end(self) -> None:
-        """Called at the end of training."""
-        if self.shield_disabled:
-            print(f"\n   Shield was disabled at timestep {self.disable_timestep}")
-        else:
-            print(f"\n   Shield remained active throughout training (threshold not reached)")
 
 class ShieldHardCutoffCallback(BaseCallback):
     """
