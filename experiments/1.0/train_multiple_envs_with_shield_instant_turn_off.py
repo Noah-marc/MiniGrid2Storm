@@ -36,6 +36,8 @@ from envs.registry import register_env
 from shield import DeltaShield
 from probabilistic_minigrids import ProbabilisticEnvWrapper
 from collections import deque
+from feature_extractor import MinigridFeaturesExtractor
+from callbacks import ShieldHardCutoffCallback
 
 # Define output directory (relative to project root)
 OUTPUT_DIR = project_root / "experiments" / "1.0" / "shielded_instant_turn_off2"
@@ -94,97 +96,6 @@ def make_video_trigger(recording_timesteps: list, num_envs: int):
         return False
 
     return trigger
-
-class ShieldHardCutoffCallback(BaseCallback):
-    """
-    Hard cutoff shielding callback. Removes the sield once for 20 episodes the mean reward is above the threshold
-    - Tracks rolling mean episode reward
-    - Defines an empirical reference reward R_ref
-    - Disables the shield once reward >= alpha * R_ref
-    """
-
-    def __init__(
-        self,
-        nr_episodes: int = 10,
-        threshold: float = 0.95,
-        verbose: int = 1,
-    ):
-        super().__init__(verbose)
-        self.nr_episodes = nr_episodes
-        self.threshold = threshold
-
-        self.ep_rewards = deque(maxlen=self.nr_episodes)
-        self.shield_active = True
-        self.cutoff_timestep = None
-
-    def _on_step(self) -> bool:
-        """
-        Called at every environment step.
-        """
-        if self.shield_active:
-            infos = self.locals.get("infos", [])
-
-            for info in infos:
-                # Monitor wrapper adds this when an episode ends
-                if "episode" in info:
-                    ep_rew = info["episode"]["r"]
-                    self.ep_rewards.append(ep_rew)
-
-                    # Only act once we have a full window
-                    if len(self.ep_rewards) == self.nr_episodes:
-                        mean_rew = np.mean(self.ep_rewards)
-
-                        # Update empirical reference reward
-                        if mean_rew > self.threshold:
-                            # Access all environments in the vectorized wrapper and disable shields
-                            vec_env = self.training_env
-                            for i in range(vec_env.num_envs):
-                                env = vec_env.envs[i]
-                                # Unwrap through wrappers until we reach ProbabilisticEnvWrapper
-                                while hasattr(env, 'env') and not isinstance(env, ProbabilisticEnvWrapper):
-                                    env = env.env
-                                # Now we have the ProbabilisticEnvWrapper
-                                if isinstance(env, ProbabilisticEnvWrapper):
-                                    env.remove_shield()
-                                else:
-                                    raise RuntimeError(f"Could not find ProbabilisticEnvWrapper in env {i} to remove shield")
-                            
-                            self.shield_active = False
-                            self.cutoff_timestep = self.num_timesteps
-                            self.logger.record("shield_cutoff_timestep", self.num_timesteps)
-                            
-                            if self.verbose > 0:
-                                print(f"\n{'='*80}")
-                                print(f"🎯 SHIELD DISABLED at timestep {self.num_timesteps}")
-                                print(f"   Mean reward over {self.nr_episodes} episodes: {mean_rew:.3f} >= {self.threshold}")
-                                print(f"   Continuing training without shield...")
-                                print(f"{'='*80}\n")
-        return True
-
-class MinigridFeaturesExtractor(BaseFeaturesExtractor):
-    """Custom CNN feature extractor for MiniGrid environments."""
-    
-    def __init__(self, observation_space: gym.Space, features_dim: int = 512, normalized_image: bool = False) -> None:
-        super().__init__(observation_space, features_dim)
-        n_input_channels = observation_space.shape[0]
-        self.cnn = nn.Sequential(
-            nn.Conv2d(n_input_channels, 16, (2, 2)),
-            nn.ReLU(),
-            nn.Conv2d(16, 32, (2, 2)),
-            nn.ReLU(),
-            nn.Conv2d(32, 64, (2, 2)),
-            nn.ReLU(),
-            nn.Flatten(),
-        )
-
-        # Compute shape by doing one forward pass
-        with torch.no_grad():
-            n_flatten = self.cnn(torch.as_tensor(observation_space.sample()[None]).float()).shape[1]
-
-        self.linear = nn.Sequential(nn.Linear(n_flatten, features_dim), nn.ReLU())
-
-    def forward(self, observations: torch.Tensor) -> torch.Tensor:
-        return self.linear(self.cnn(observations))
 
 
 def plot_training_results(log_dir: Path, env_name: str, output_path: Path, shield_disable_timestep: int = None):

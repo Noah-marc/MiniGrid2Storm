@@ -30,6 +30,7 @@ import numpy as np
 from PIL import Image
 
 from envs.registry import register_env
+from feature_extractor import MinigridFeaturesExtractor
 
 # Define output directory (relative to project root)
 OUTPUT_DIR = project_root / "experiments" / "1.0" / "unshielded3"
@@ -84,30 +85,7 @@ def make_video_trigger(recording_timesteps: list, num_envs: int):
     return trigger
 
 
-class MinigridFeaturesExtractor(BaseFeaturesExtractor):
-    """Custom CNN feature extractor for MiniGrid environments."""
-    
-    def __init__(self, observation_space: gym.Space, features_dim: int = 512, normalized_image: bool = False) -> None:
-        super().__init__(observation_space, features_dim)
-        n_input_channels = observation_space.shape[0]
-        self.cnn = nn.Sequential(
-            nn.Conv2d(n_input_channels, 16, (2, 2)),
-            nn.ReLU(),
-            nn.Conv2d(16, 32, (2, 2)),
-            nn.ReLU(),
-            nn.Conv2d(32, 64, (2, 2)),
-            nn.ReLU(),
-            nn.Flatten(),
-        )
 
-        # Compute shape by doing one forward pass
-        with torch.no_grad():
-            n_flatten = self.cnn(torch.as_tensor(observation_space.sample()[None]).float()).shape[1]
-
-        self.linear = nn.Sequential(nn.Linear(n_flatten, features_dim), nn.ReLU())
-
-    def forward(self, observations: torch.Tensor) -> torch.Tensor:
-        return self.linear(self.cnn(observations))
 
 
 def plot_training_results(log_dir: Path, env_name: str, output_path: Path):
