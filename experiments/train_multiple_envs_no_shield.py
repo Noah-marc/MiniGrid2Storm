@@ -11,7 +11,7 @@ from pathlib import Path
 
 # Add parent directory to path to import envs module
 script_dir = Path(__file__).parent
-project_root = script_dir.parent.parent
+project_root = script_dir.parent
 sys.path.insert(0, str(project_root))
 
 import gymnasium as gym
@@ -34,7 +34,7 @@ from feature_extractor import MinigridFeaturesExtractor
 from train_utils import make_video_trigger, save_env_image
 
 # Define output directory (relative to project root)
-OUTPUT_DIR = project_root / "experiments" / "1.0" / "unshielded3"
+OUTPUT_DIR = script_dir / "output" / "unshielded"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # List of goal_state environments to train
