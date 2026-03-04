@@ -21,7 +21,11 @@ sys.path.insert(0, str(project_root))
 _parser = argparse.ArgumentParser(description="Train PPO with gradual shield reduction.")
 _parser.add_argument("--mechanism", choices=["delta", "ignore_prob"], default="ignore_prob",
                      help="Shield reduction mechanism (default: ignore_prob)")
-SHIELD_MECHANISM = _parser.parse_args().mechanism
+_parser.add_argument("--output_dir", required=True,
+                     help="Output directory name under experiments/output/")
+_args = _parser.parse_args()
+SHIELD_MECHANISM = _args.mechanism
+OUTPUT_DIR_ARG = _args.output_dir
 
 import gymnasium as gym
 import torch
@@ -60,7 +64,7 @@ IGNORE_PROB_SCHEDULE = [0.0, 0.1, 0.3, 0.5, 0.7, 1.0]  # Gradual increase in ign
 # Options: "delta" or "ignore_prob"
 
 # Define output directory (relative to project root)
-OUTPUT_DIR = script_dir / "output" / "shielded_gradual_reduction" / f"{SHIELD_MECHANISM}"
+OUTPUT_DIR = script_dir / "output" / OUTPUT_DIR_ARG / "shielded_gradual_reduction" / f"{SHIELD_MECHANISM}"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # List of goal_state environments to train

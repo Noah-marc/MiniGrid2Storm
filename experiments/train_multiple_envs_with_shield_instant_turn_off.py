@@ -9,12 +9,19 @@ Trains PPO policies for each environment and saves:
 """
 
 import sys
+import argparse
 from pathlib import Path
 
 # Add parent directory to path to import envs module
 script_dir = Path(__file__).parent
 project_root = script_dir.parent
 sys.path.insert(0, str(project_root))
+
+# Parse arguments early so OUTPUT_DIR_ARG is available for module-level constants
+_parser = argparse.ArgumentParser(description="Train PPO with shield (instant turn-off).")
+_parser.add_argument("--output_dir", required=True,
+                     help="Output directory name under experiments/output/")
+OUTPUT_DIR_ARG = _parser.parse_args().output_dir
 
 import gymnasium as gym
 import torch
@@ -40,8 +47,8 @@ from feature_extractor import MinigridFeaturesExtractor
 from callbacks import ShieldHardCutoffCallback
 from train_utils import make_video_trigger, save_env_image
 
-# Define output directory (relative to project root)
-OUTPUT_DIR = script_dir / "output" / "shielded_instant_turn_off"
+# Define output directory (relative to script dir)
+OUTPUT_DIR = script_dir / "output" / OUTPUT_DIR_ARG / "shielded_instant_turn_off"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # List of goal_state environments to train
