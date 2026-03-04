@@ -92,49 +92,59 @@ class GradualShieldReductionCallback(BaseCallback):
     by either decreasing delta values or increasing ignore_prob when performance thresholds are reached.
     """
     
-    def __init__(self, 
+    def __init__(self,
                  mechanism: str = "delta",
                  delta_schedule: list[float] = None,
                  ignore_prob_schedule: list[float] = None,
+                 ignore_prob_delta: float = None,
                  reward_thresholds: list[float] = None,
                  nr_episodes: int = 100,
                  verbose: int = 1):
         super().__init__(verbose)
-        
-        # Default schedules if not provided
-        if delta_schedule is None:
-            delta_schedule = [0.9, 0.7, 0.5, 0.3, 0.1, 0.0]
-        if ignore_prob_schedule is None:
-            ignore_prob_schedule = [0.0, 0.1, 0.3, 0.5, 0.7, 1.0]
-        if reward_thresholds is None:
-            reward_thresholds = [0.0, 0.2, 0.4, 0.6, 0.75, 0.85]
-        
-        # Validation
+
         if mechanism not in ["delta", "ignore_prob"]:
             raise ValueError("mechanism must be 'delta' or 'ignore_prob'")
-        
-        if mechanism == "delta" and len(delta_schedule) != len(reward_thresholds):
-            raise ValueError("delta_schedule and reward_thresholds must have the same length")
-        
-        if mechanism == "ignore_prob" and len(ignore_prob_schedule) != len(reward_thresholds):
-            raise ValueError("ignore_prob_schedule and reward_thresholds must have the same length")
-        
+
+        if reward_thresholds is None:
+            reward_thresholds = [0.0, 0.2, 0.4, 0.6, 0.75, 0.85]
+
+        if mechanism == "delta":
+            # delta_schedule is required for this mechanism
+            if delta_schedule is None:
+                delta_schedule = [0.9, 0.7, 0.5, 0.3, 0.1, 0.0]
+            if len(delta_schedule) != len(reward_thresholds):
+                raise ValueError("delta_schedule and reward_thresholds must have the same length")
+        else:  # ignore_prob
+            # ignore_prob_schedule and ignore_prob_delta are both required for this mechanism
+            if ignore_prob_schedule is None:
+                ignore_prob_schedule = [0.0, 0.1, 0.3, 0.5, 0.7, 1.0]
+            if ignore_prob_delta is None:
+                raise ValueError(
+                    "ignore_prob_delta must be provided when mechanism='ignore_prob'. "
+                    "It specifies the fixed delta value of the DeltaShield used throughout training."
+                )
+            if len(ignore_prob_schedule) != len(reward_thresholds):
+                raise ValueError("ignore_prob_schedule and reward_thresholds must have the same length")
+
         self.mechanism = mechanism
         self.delta_schedule = delta_schedule
         self.ignore_prob_schedule = ignore_prob_schedule
+        self.ignore_prob_delta = ignore_prob_delta
         self.reward_thresholds = reward_thresholds
         self.nr_episodes = nr_episodes
-        
+
         # Use appropriate schedule based on mechanism
         self.active_schedule = delta_schedule if mechanism == "delta" else ignore_prob_schedule
-        
+
         # State tracking
         self.current_stage = 0  # Which stage in the schedule we're at
         self.ep_rewards = deque(maxlen=self.nr_episodes)
         self.stage_transitions = []  # Track when each transition happened
-        
+
         if self.verbose > 0:
             print(f"\n📊 GRADUAL SHIELD REDUCTION SCHEDULE ({mechanism.upper()}):")
+            if mechanism == "ignore_prob":
+                print(f"   Fixed δ={ignore_prob_delta:.2f} throughout (only ignore_prob varies)")
             for i, (value, threshold) in enumerate(zip(self.active_schedule, reward_thresholds)):
                 if mechanism == "delta":
                     if i == 0:

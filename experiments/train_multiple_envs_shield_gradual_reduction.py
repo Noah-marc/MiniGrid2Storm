@@ -52,12 +52,13 @@ from callbacks import GradualShieldReductionCallback
 from train_utils import make_video_trigger, save_env_image
 
 # Shield configuration - gradual reduction schedule
-INITIAL_DELTA = 0.9  # Start with high protection
+INITIAL_DELTA = 0.9  # Start with high protection (used for mechanism='delta')
 DELTA_SCHEDULE = [0.9, 0.7, 0.5, 0.3, 0.1, 0.0]  # Gradual reduction to no shield
 REWARD_THRESHOLDS = [0.0, 0.2, 0.4, 0.6, 0.75, 0.85]  # Performance thresholds for transitions
 
-# Alternative ignore_prob schedule (probability of ignoring actions)
+# ignore_prob schedule (probability of ignoring shield actions) and its fixed delta
 IGNORE_PROB_SCHEDULE = [0.0, 0.1, 0.3, 0.5, 0.7, 1.0]  # Gradual increase in ignoring probability
+IGNORE_PROB_DELTA = 0.9  # Fixed delta value used for DeltaShield when mechanism='ignore_prob'
 
 # Shield mechanism selection
 # Shield mechanism selection (set via --mechanism argument, see argparse setup above)
@@ -277,10 +278,14 @@ def train_environment(env_name: str):
         env = ReseedWrapper(env, seeds=[FIXED_SEED])
         env.unwrapped.add_lava()
 
-        # Build Storm model on the wrapper, then attach shield
+        # Build Storm model on the wrapper, then attach shield.
+        # The initial delta depends on the mechanism:
+        #   - 'delta': delta will be varied by the callback, so start at INITIAL_DELTA.
+        #   - 'ignore_prob': delta stays fixed at IGNORE_PROB_DELTA; only ignore_prob varies.
+        initial_delta = INITIAL_DELTA if SHIELD_MECHANISM == "delta" else IGNORE_PROB_DELTA
         env.reset()
         model, _ = env.unwrapped.convert_to_probabilistic_storm()
-        shield = DeltaShield(model, "Pmin=? [F \"lava\"]", delta=INITIAL_DELTA)
+        shield = DeltaShield(model, "Pmin=? [F \"lava\"]", delta=initial_delta)
         env.unwrapped.set_shield(shield)
 
         return env
@@ -300,7 +305,8 @@ def train_environment(env_name: str):
         name_prefix=env_name,
     )
     
-    print(f"   {NUM_ENVS} environments created with shield (δ={INITIAL_DELTA})")
+    _displayed_delta = INITIAL_DELTA if SHIELD_MECHANISM == "delta" else IGNORE_PROB_DELTA
+    print(f"   {NUM_ENVS} environments created with shield (δ={_displayed_delta})")
     
     # Save environment image (using first environment from the vectorized env)
     print(f"\n2. Saving environment image...")
@@ -333,14 +339,23 @@ def train_environment(env_name: str):
     print(f"   PPO model initialized")
     
     # Create callback for gradual shield reduction
-    shield_callback = GradualShieldReductionCallback(
-        mechanism=SHIELD_MECHANISM,
-        delta_schedule=DELTA_SCHEDULE,
-        ignore_prob_schedule=IGNORE_PROB_SCHEDULE,
-        reward_thresholds=REWARD_THRESHOLDS,
-        nr_episodes=100,
-        verbose=1
-    )
+    if SHIELD_MECHANISM == "delta":
+        shield_callback = GradualShieldReductionCallback(
+            mechanism="delta",
+            delta_schedule=DELTA_SCHEDULE,
+            reward_thresholds=REWARD_THRESHOLDS,
+            nr_episodes=100,
+            verbose=1,
+        )
+    else:  # ignore_prob
+        shield_callback = GradualShieldReductionCallback(
+            mechanism="ignore_prob",
+            ignore_prob_schedule=IGNORE_PROB_SCHEDULE,
+            ignore_prob_delta=IGNORE_PROB_DELTA,
+            reward_thresholds=REWARD_THRESHOLDS,
+            nr_episodes=100,
+            verbose=1,
+        )
     
     # Train
     print(f"\n4. Training for {TOTAL_TIMESTEPS:,.0f} timesteps...")
