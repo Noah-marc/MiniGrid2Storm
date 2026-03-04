@@ -21,7 +21,7 @@ import torch
 import torch.nn as nn
 from stable_baselines3 import PPO
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
-from stable_baselines3.common.logger import configure
+from stable_baselines3.common.logger import configure, CSVOutputFormat, HumanOutputFormat
 from stable_baselines3.common.vec_env import DummyVecEnv, VecMonitor, VecVideoRecorder
 from stable_baselines3.common.callbacks import BaseCallback
 from minigrid.wrappers import ImgObsWrapper, ReseedWrapper
@@ -95,8 +95,9 @@ VIDEO_LENGTH = 200  # Max frames per clip
 def plot_training_results(log_dir: Path, env_name: str, output_path: Path, shield_disable_timestep=None):
     """Load training results and create performance plots."""
     try:
-        # Read progress.csv from PPO logger
-        progress_file = log_dir / "progress.csv"
+        # Read shield_gradual_reduction CSV from PPO logger
+        csv_filename = f"shield_gradual_reduction_{SHIELD_MECHANISM}.csv"
+        progress_file = log_dir / csv_filename
         df = pd.read_csv(progress_file)
         
         # Create performance plot (2x2)
@@ -300,8 +301,12 @@ def train_environment(env_name: str):
         features_extractor_kwargs=dict(features_dim=FEATURES_DIM),
     )
     
-    # Configure logging
-    ppo_logger = configure(str(log_dir), ["stdout", "csv"])
+    # Configure logging with descriptive CSV filename
+    csv_filename = f"shield_gradual_reduction_{SHIELD_MECHANISM}.csv"
+    csv_logger = CSVOutputFormat(str(log_dir / csv_filename))
+    human_logger = HumanOutputFormat(sys.stdout)
+    ppo_logger = configure(folder=None, format_strings=[])
+    ppo_logger.output_formats = [human_logger, csv_logger]
     
     # Create PPO model
     model = PPO(

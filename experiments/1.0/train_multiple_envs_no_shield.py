@@ -19,7 +19,7 @@ import torch
 import torch.nn as nn
 from stable_baselines3 import PPO
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
-from stable_baselines3.common.logger import configure
+from stable_baselines3.common.logger import configure, CSVOutputFormat, HumanOutputFormat
 from stable_baselines3.common.vec_env import DummyVecEnv, VecMonitor, VecVideoRecorder
 from minigrid.wrappers import ImgObsWrapper, ReseedWrapper
 import matplotlib.pyplot as plt
@@ -75,8 +75,8 @@ VIDEO_LENGTH = 200  # Max frames per clip
 def plot_training_results(log_dir: Path, env_name: str, output_path: Path):
     """Load training results and create performance plots."""
     try:
-        # Read progress.csv from PPO logger (same approach as notebook)
-        progress_file = log_dir / "progress.csv"
+        # Read unshield.csv from PPO logger
+        progress_file = log_dir / "unshield.csv"
         df = pd.read_csv(progress_file)
         
         fig, axes = plt.subplots(2, 2, figsize=(14, 10))
@@ -140,11 +140,6 @@ def plot_training_results(log_dir: Path, env_name: str, output_path: Path):
         traceback.print_exc()
 
 
-
-        import traceback
-        traceback.print_exc()
-
-
 def train_environment(env_name: str):
     """Train a PPO policy for a single environment."""
     print(f"\n{'='*80}")
@@ -202,8 +197,11 @@ def train_environment(env_name: str):
         features_extractor_kwargs=dict(features_dim=FEATURES_DIM),
     )
     
-    # Configure logging
-    ppo_logger = configure(str(log_dir), ["stdout", "csv"])
+    # Configure logging with descriptive CSV filename
+    csv_logger = CSVOutputFormat(str(log_dir / "unshield.csv"))
+    human_logger = HumanOutputFormat(sys.stdout)
+    ppo_logger = configure(folder=None, format_strings=[])
+    ppo_logger.output_formats = [human_logger, csv_logger]
     
     # Create PPO model
     model = PPO(
