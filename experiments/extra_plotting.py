@@ -127,5 +127,10 @@ def plot_training_comparison(dir_name: str) -> None:
         plt.close(fig)
         print(f"Saved: {output_path}")
 
+def main():
+    # In case that this script is run directly, generate the training comparison plot for a directory.
+    plot_training_comparison("1.0")
 
+if __name__ == "__main__":
+    main()
 
