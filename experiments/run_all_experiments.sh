@@ -1,6 +1,8 @@
 #!/bin/bash
 # Run all training experiments in sequence.
-# Usage: ./run_all_experiments.sh --output_dir <name>
+# Usage: ./run_all_experiments.sh [--output_dir <name>]
+# If --output_dir is omitted, the directory name is auto-generated from the current
+# date and time, e.g. "02_March_14:05".
 
 set -e  # Exit immediately on error
 
@@ -16,16 +18,15 @@ while [[ $# -gt 0 ]]; do
             ;;
         *)
             echo "Unknown argument: $1"
-            echo "Usage: $0 --output_dir <name>"
+            echo "Usage: $0 [--output_dir <name>]"
             exit 1
             ;;
     esac
 done
 
 if [[ -z "$OUTPUT_DIR_ARG" ]]; then
-    echo "Error: --output_dir is required"
-    echo "Usage: $0 --output_dir <name>"
-    exit 1
+    OUTPUT_DIR_ARG="$(date '+%d_%B_%H:%M')"
+    echo "No --output_dir specified — using auto-generated name: $OUTPUT_DIR_ARG"
 fi
 
 echo "========================================================================"
