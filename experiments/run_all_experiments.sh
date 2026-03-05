@@ -36,7 +36,7 @@ echo "Scripts dir:  $SCRIPT_DIR"
 echo "Output dir:   $OUTPUT_DIR_ARG"
 echo ""
 
-cd "$SCRIPT_DIR"
+cd "$SCRIPT_DIR/.."  # Run from project root so relative paths (e.g. ./envs/configs/) resolve correctly
 
 run_experiment() {
     local name="$1"
@@ -58,19 +58,19 @@ run_experiment() {
 
 run_experiment \
     "Unshielded" \
-    "uv run train_multiple_envs_no_shield.py --output_dir \"$OUTPUT_DIR_ARG\""
+    "uv run experiments/train_multiple_envs_no_shield.py --output_dir \"$OUTPUT_DIR_ARG\""
 
 run_experiment \
     "Shielded - Instant Turn Off" \
-    "uv run train_multiple_envs_with_shield_instant_turn_off.py --output_dir \"$OUTPUT_DIR_ARG\""
+    "uv run experiments/train_multiple_envs_with_shield_instant_turn_off.py --output_dir \"$OUTPUT_DIR_ARG\""
 
 run_experiment \
     "Shielded - Gradual Reduction (delta)" \
-    "uv run train_multiple_envs_shield_gradual_reduction.py --mechanism delta --output_dir \"$OUTPUT_DIR_ARG\""
+    "uv run experiments/train_multiple_envs_shield_gradual_reduction.py --mechanism delta --output_dir \"$OUTPUT_DIR_ARG\""
 
 run_experiment \
     "Shielded - Gradual Reduction (ignore_prob)" \
-    "uv run train_multiple_envs_shield_gradual_reduction.py --mechanism ignore_prob --output_dir \"$OUTPUT_DIR_ARG\""
+    "uv run experiments/train_multiple_envs_shield_gradual_reduction.py --mechanism ignore_prob --output_dir \"$OUTPUT_DIR_ARG\""
 
 echo ""
 echo "========================================================================"
