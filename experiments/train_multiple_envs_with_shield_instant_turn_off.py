@@ -82,7 +82,7 @@ RECORDING_TIMESTEPS = [
 ]
 VIDEO_LENGTH = 200  # Max frames per clip
 SHIELD_DELTA = 0.5  # Delta parameter for DeltaShield
-REWARD_THRESHOLD = 0.7 # Disable shield when mean reward reaches this value
+SHIELD_DISABLE_TIMESTEP = 2_500_000  # Disable shield at this timestep
 
 
 
@@ -269,14 +269,13 @@ def train_environment(env_name: str):
     
     # Create callback to disable shield at threshold
     shield_callback = ShieldHardCutoffCallback(
-        nr_episodes=100, 
-        threshold=REWARD_THRESHOLD,
+        cutoff_timestep=SHIELD_DISABLE_TIMESTEP,
         verbose=1
     )
     
     # Train
     print(f"\n4. Training for {TOTAL_TIMESTEPS:,.0f} timesteps...")
-    print(f"   Monitoring for {shield_callback.nr_episodes} episodes mean reward threshold to disable shield...")
+    print(f"   Shield will be disabled at timestep {SHIELD_DISABLE_TIMESTEP:,}...")
     model.learn(total_timesteps=TOTAL_TIMESTEPS, callback=shield_callback)
     
     # Save policy
@@ -290,7 +289,7 @@ def train_environment(env_name: str):
         log_dir, 
         env_name, 
         plot_path,
-        shield_disable_timestep=shield_callback.cutoff_timestep
+        shield_disable_timestep=shield_callback.actual_cutoff_timestep
     )
     print(f"   Plot saved to: {plot_path}")
     
@@ -299,7 +298,7 @@ def train_environment(env_name: str):
     
     print(f"\n✓ Completed training for {env_name}")
     
-    return shield_callback.cutoff_timestep
+    return shield_callback.actual_cutoff_timestep
 
 
 def main():
@@ -316,7 +315,7 @@ def main():
     print(f"\nShield configuration:")
     print(f"  - Type: DeltaShield")
     print(f"  - Delta: {SHIELD_DELTA}")
-    print(f"  - Disable threshold: {REWARD_THRESHOLD} mean reward")
+    print(f"  - Disable at timestep: {SHIELD_DISABLE_TIMESTEP:,}")
     
     successful = []
     failed = []

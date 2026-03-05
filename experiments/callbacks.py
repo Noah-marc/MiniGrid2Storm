@@ -3,8 +3,6 @@ Callback classes for shielding experiments.
 This module contains callback implementations for different shield management strategies.
 """
 
-import numpy as np
-from collections import deque
 from stable_baselines3.common.callbacks import BaseCallback
 
 # Add parent directory to path to import project modules
@@ -20,224 +18,166 @@ from probabilistic_minigrids import ProbabilisticEnvWrapper
 
 class ShieldHardCutoffCallback(BaseCallback):
     """
-    Hard cutoff shielding callback. Removes the shield once for 20 episodes the mean reward is above the threshold
-    - Tracks rolling mean episode reward
-    - Defines an empirical reference reward R_ref
-    - Disables the shield once reward >= alpha * R_ref
+    Hard cutoff shielding callback. Removes the shield at a fixed timestep.
+    - Disables the shield once num_timesteps >= cutoff_timestep
     """
 
     def __init__(
         self,
-        nr_episodes: int = 10,
-        threshold: float = 0.95,
+        cutoff_timestep: int = 2_500_000,
         verbose: int = 1,
     ):
         super().__init__(verbose)
-        self.nr_episodes = nr_episodes
-        self.threshold = threshold
+        self.cutoff_timestep = cutoff_timestep
 
-        self.ep_rewards = deque(maxlen=self.nr_episodes)
         self.shield_active = True
-        self.cutoff_timestep = None
+        self.actual_cutoff_timestep = None
 
     def _on_step(self) -> bool:
         """
         Called at every environment step.
         """
-        if self.shield_active:
-            infos = self.locals.get("infos", [])
+        if self.shield_active and self.num_timesteps >= self.cutoff_timestep:
+            # Access all environments in the vectorized wrapper and disable shields
+            vec_env = self.training_env
+            for i in range(vec_env.num_envs):
+                env = vec_env.envs[i]
+                # Unwrap through wrappers until we reach ProbabilisticEnvWrapper
+                while hasattr(env, 'env') and not isinstance(env, ProbabilisticEnvWrapper):
+                    env = env.env
+                # Now we have the ProbabilisticEnvWrapper
+                if isinstance(env, ProbabilisticEnvWrapper):
+                    env.remove_shield()
+                else:
+                    raise RuntimeError(f"Could not find ProbabilisticEnvWrapper in env {i} to remove shield")
 
-            for info in infos:
-                # Monitor wrapper adds this when an episode ends
-                if "episode" in info:
-                    ep_rew = info["episode"]["r"]
-                    self.ep_rewards.append(ep_rew)
+            self.shield_active = False
+            self.actual_cutoff_timestep = self.num_timesteps
+            self.logger.record("shield_cutoff_timestep", self.num_timesteps)
 
-                    # Only act once we have a full window
-                    if len(self.ep_rewards) == self.nr_episodes:
-                        mean_rew = np.mean(self.ep_rewards)
-
-                        # Update empirical reference reward
-                        if mean_rew > self.threshold:
-                            # Access all environments in the vectorized wrapper and disable shields
-                            vec_env = self.training_env
-                            for i in range(vec_env.num_envs):
-                                env = vec_env.envs[i]
-                                # Unwrap through wrappers until we reach ProbabilisticEnvWrapper
-                                while hasattr(env, 'env') and not isinstance(env, ProbabilisticEnvWrapper):
-                                    env = env.env
-                                # Now we have the ProbabilisticEnvWrapper
-                                if isinstance(env, ProbabilisticEnvWrapper):
-                                    env.remove_shield()
-                                else:
-                                    raise RuntimeError(f"Could not find ProbabilisticEnvWrapper in env {i} to remove shield")
-                            
-                            self.shield_active = False
-                            self.cutoff_timestep = self.num_timesteps
-                            self.logger.record("shield_cutoff_timestep", self.num_timesteps)
-                            
-                            if self.verbose > 0:
-                                print(f"\n{'='*80}")
-                                print(f"🎯 SHIELD DISABLED at timestep {self.num_timesteps}")
-                                print(f"   Mean reward over {self.nr_episodes} episodes: {mean_rew:.3f} >= {self.threshold}")
-                                print(f"   Continuing training without shield...")
-                                print(f"{'='*80}\n")
+            if self.verbose > 0:
+                print(f"\n{'='*80}")
+                print(f"SHIELD DISABLED at timestep {self.num_timesteps}")
+                print(f"   Scheduled cutoff at: {self.cutoff_timestep}")
+                print(f"   Continuing training without shield...")
+                print(f"{'='*80}\n")
 
         return True
 
 
 class GradualShieldReductionCallback(BaseCallback):
     """
-    Custom callback that monitors training progress and gradually reduces shield protection
-    by either decreasing delta values or increasing ignore_prob when performance thresholds are reached.
+    Custom callback that gradually reduces shield protection at fixed timestep thresholds
+    by either decreasing delta values or increasing ignore_prob.
     """
-    
+
     def __init__(self,
                  mechanism: str = "delta",
                  delta_schedule: list[float] = None,
                  ignore_prob_schedule: list[float] = None,
                  ignore_prob_delta: float = None,
-                 reward_thresholds: list[float] = None,
-                 nr_episodes: int = 100,
+                 timestep_schedule: list[float] = None,
                  verbose: int = 1):
         super().__init__(verbose)
 
         if mechanism not in ["delta", "ignore_prob"]:
             raise ValueError("mechanism must be 'delta' or 'ignore_prob'")
 
-        if reward_thresholds is None:
-            reward_thresholds = [0.0, 0.2, 0.4, 0.6, 0.75, 0.85]
+        if timestep_schedule is None:
+            timestep_schedule = [1_000_000, 2_000_000, 3_000_000, 4_000_000]
 
         if mechanism == "delta":
-            # delta_schedule is required for this mechanism
             if delta_schedule is None:
-                delta_schedule = [0.9, 0.7, 0.5, 0.3, 0.1, 0.0]
-            if len(delta_schedule) != len(reward_thresholds):
-                raise ValueError("delta_schedule and reward_thresholds must have the same length")
+                delta_schedule = [0.8, 0.6, 0.4, 0.2]
+            if len(delta_schedule) != len(timestep_schedule):
+                raise ValueError("delta_schedule and timestep_schedule must have the same length")
         else:  # ignore_prob
-            # ignore_prob_schedule and ignore_prob_delta are both required for this mechanism
             if ignore_prob_schedule is None:
-                ignore_prob_schedule = [0.0, 0.1, 0.3, 0.5, 0.7, 1.0]
+                ignore_prob_schedule = [0.2, 0.4, 0.6, 0.8]
             if ignore_prob_delta is None:
                 raise ValueError(
                     "ignore_prob_delta must be provided when mechanism='ignore_prob'. "
                     "It specifies the fixed delta value of the DeltaShield used throughout training."
                 )
-            if len(ignore_prob_schedule) != len(reward_thresholds):
-                raise ValueError("ignore_prob_schedule and reward_thresholds must have the same length")
+            if len(ignore_prob_schedule) != len(timestep_schedule):
+                raise ValueError("ignore_prob_schedule and timestep_schedule must have the same length")
 
         self.mechanism = mechanism
         self.delta_schedule = delta_schedule
         self.ignore_prob_schedule = ignore_prob_schedule
         self.ignore_prob_delta = ignore_prob_delta
-        self.reward_thresholds = reward_thresholds
-        self.nr_episodes = nr_episodes
+        self.timestep_schedule = [int(t) for t in timestep_schedule]
 
         # Use appropriate schedule based on mechanism
         self.active_schedule = delta_schedule if mechanism == "delta" else ignore_prob_schedule
 
-        # State tracking
-        self.current_stage = 0  # Which stage in the schedule we're at
-        self.ep_rewards = deque(maxlen=self.nr_episodes)
+        # State tracking: current_stage is the index of the next scheduled transition
+        self.current_stage = 0
         self.stage_transitions = []  # Track when each transition happened
 
         if self.verbose > 0:
-            print(f"\n📊 GRADUAL SHIELD REDUCTION SCHEDULE ({mechanism.upper()}):")
+            print(f"\nGRADUAL SHIELD REDUCTION SCHEDULE ({mechanism.upper()}):")
             if mechanism == "ignore_prob":
                 print(f"   Fixed δ={ignore_prob_delta:.2f} throughout (only ignore_prob varies)")
-            for i, (value, threshold) in enumerate(zip(self.active_schedule, reward_thresholds)):
+            for i, (value, ts) in enumerate(zip(self.active_schedule, self.timestep_schedule)):
                 if mechanism == "delta":
-                    if i == 0:
-                        print(f"   Stage {i}: δ={value:.1f} (initial)")
-                    else:
-                        print(f"   Stage {i}: δ={value:.1f} (when mean reward ≥ {threshold:.2f})")
-                else:  # ignore_prob
-                    if i == 0:
-                        print(f"   Stage {i}: ignore_prob={value:.1f} (initial)")
-                    else:
-                        print(f"   Stage {i}: ignore_prob={value:.1f} (when mean reward ≥ {threshold:.2f})")
-            print(f"   Tracking performance over {nr_episodes} episodes\n")
+                    print(f"   Stage {i}: δ={value:.2f} at timestep {ts:,}")
+                else:
+                    print(f"   Stage {i}: ignore_prob={value:.2f} at timestep {ts:,}")
+            print()
     
     def _on_step(self) -> bool:
         """
-        Called at every environment step. We check episode completions and update shield parameters.
+        Called at every environment step. Transitions to the next shield stage when the
+        scheduled timestep is reached.
         """
-        # Only process if we haven't reached final stage
-        if self.current_stage < len(self.active_schedule) - 1:
-            infos = self.locals.get("infos", [])
+        while self.current_stage < len(self.timestep_schedule):
+            if self.num_timesteps >= self.timestep_schedule[self.current_stage]:
+                self._transition_to_stage(self.current_stage)
+            else:
+                break
 
-            for info in infos:
-                # Monitor wrapper adds this when an episode ends
-                if "episode" in info:
-                    ep_reward = info["episode"]["r"]
-                    self.ep_rewards.append(ep_reward)
-
-                    # Only evaluate once we have enough episodes
-                    if len(self.ep_rewards) == self.nr_episodes:
-                        mean_reward = np.mean(self.ep_rewards)
-                        
-                        # Check if we should move to next stage
-                        next_stage = self.current_stage + 1
-                        if next_stage < len(self.reward_thresholds):
-                            threshold = self.reward_thresholds[next_stage]
-                            
-                            if mean_reward >= threshold:
-                                self._transition_to_stage(next_stage, mean_reward)
-        
         return True  # Continue training
     
-    def _transition_to_stage(self, new_stage: int, current_mean_reward: float):
+    def _transition_to_stage(self, stage: int):
         """Transition to a new shield protection stage."""
-        old_value = self.active_schedule[self.current_stage]
-        new_value = self.active_schedule[new_stage]
-        threshold = self.reward_thresholds[new_stage]
-        
+        old_value = self.active_schedule[self.current_stage - 1] if self.current_stage > 0 else None
+        new_value = self.active_schedule[stage]
+        scheduled_ts = self.timestep_schedule[stage]
+
         # Update the shield in the environment
         self._update_environment_shield(new_value)
-        
+
         # Track the transition
         transition_data = {
             'timestep': self.num_timesteps,
-            'stage': new_stage,
-            'mean_reward': current_mean_reward,
-            'threshold': threshold
+            'scheduled_timestep': scheduled_ts,
+            'stage': stage,
         }
-        
         if self.mechanism == "delta":
             transition_data['delta'] = new_value
         else:
             transition_data['ignore_prob'] = new_value
-        
+
         self.stage_transitions.append(transition_data)
-        self.current_stage = new_stage
-        
+        self.current_stage = stage + 1  # advance past this stage
+
         # Log the transition
-        self.logger.record(f"shield/stage", new_stage)
+        self.logger.record("shield/stage", stage)
         self.logger.record(f"shield/{self.mechanism}", new_value)
-        self.logger.record(f"shield/transition_timestep", self.num_timesteps)
-        
+        self.logger.record("shield/transition_timestep", self.num_timesteps)
+
         if self.verbose > 0:
             if self.mechanism == "delta":
-                if new_value == 0.0:
-                    print(f"\n🎯 SHIELD COMPLETELY DISABLED at timestep {self.num_timesteps}")
-                    print(f"   Stage {new_stage}: δ={old_value:.1f} → δ={new_value:.1f} (NO SHIELD)")
-                else:
-                    print(f"\n⬇️  SHIELD PROTECTION REDUCED at timestep {self.num_timesteps}")
-                    print(f"   Stage {new_stage}: δ={old_value:.1f} → δ={new_value:.1f}")
-                    
-                print(f"   Mean reward achieved: {current_mean_reward:.3f} ≥ {threshold:.2f}")
-                print(f"   Continuing with {'no shield' if new_value == 0.0 else f'δ={new_value:.1f}'}...\n")
-            
+                prev_str = f"δ={old_value:.2f} → " if old_value is not None else ""
+                print(f"\nSHIELD REDUCED at timestep {self.num_timesteps} (scheduled: {scheduled_ts:,})")
+                print(f"   Stage {stage}: {prev_str}δ={new_value:.2f}")
+                print(f"   Continuing with {'no shield' if new_value == 0.0 else f'delta={new_value:.2f}'}...\n")
             else:  # ignore_prob
-                if new_value == 1.0:
-                    print(f"\n🎯 SHIELD EFFECTIVELY DISABLED at timestep {self.num_timesteps}")
-                    print(f"   Stage {new_stage}: ignore_prob={old_value:.1f} → {new_value:.1f} (IGNORING ALL)")
-                else:
-                    print(f"\n⬆️  SHIELD IGNORE PROBABILITY INCREASED at timestep {self.num_timesteps}")
-                    print(f"   Stage {new_stage}: ignore_prob={old_value:.1f} → {new_value:.1f}")
-                
-                print(f"   Mean reward achieved: {current_mean_reward:.3f} ≥ {threshold:.2f}")
-                print(f"   Continuing with {'effectively no shield' if new_value == 1.0 else f'ignore_prob={new_value:.1f}'}...\n")
+                prev_str = f"ignore_prob={old_value:.2f} → " if old_value is not None else ""
+                print(f"\nSHIELD IGNORE_PROB INCREASED at timestep {self.num_timesteps} (scheduled: {scheduled_ts:,})")
+                print(f"   Stage {stage}: {prev_str}ignore_prob={new_value:.2f}")
+                print(f"   Continuing with ignore_prob={new_value:.2f}...\n")
     
     def _update_environment_shield(self, new_value: float):
         """Update the shield parameter in all vectorized environments."""
@@ -287,21 +227,15 @@ class GradualShieldReductionCallback(BaseCallback):
     def _on_training_end(self) -> None:
         """Called at the end of training."""
         if self.verbose > 0:
-            print(f"\n📈 SHIELD REDUCTION SUMMARY ({self.mechanism.upper()}):")
-            print(f"   Final stage: {self.current_stage}/{len(self.active_schedule)-1}")
-            
-            final_value = self.active_schedule[self.current_stage]
-            if self.mechanism == "delta":
-                print(f"   Final delta: {final_value:.1f}")
-            else:
-                print(f"   Final ignore_prob: {final_value:.1f}")
-            
+            print(f"\nSHIELD REDUCTION SUMMARY ({self.mechanism.upper()}):")
+            stages_done = len(self.stage_transitions)
+            print(f"   Stages completed: {stages_done}/{len(self.active_schedule)}")
+
             if self.stage_transitions:
-                print(f"   Transitions made: {len(self.stage_transitions)}")
                 for i, transition in enumerate(self.stage_transitions):
                     param_name = "delta" if self.mechanism == "delta" else "ignore_prob"
                     param_value = transition.get(param_name, "N/A")
-                    print(f"     {i+1}. Timestep {transition['timestep']}: "
-                          f"{param_name}={param_value:.1f} (reward: {transition['mean_reward']:.3f})")
+                    print(f"     {i+1}. Timestep {transition['timestep']:,}: "
+                          f"{param_name}={param_value:.2f} (scheduled: {transition['scheduled_timestep']:,})")
             else:
                 print(f"   No stage transitions occurred")

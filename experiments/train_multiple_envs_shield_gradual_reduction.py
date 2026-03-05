@@ -53,11 +53,13 @@ from train_utils import make_video_trigger, save_env_image
 
 # Shield configuration - gradual reduction schedule
 INITIAL_DELTA = 0.9  # Start with high protection (used for mechanism='delta')
-DELTA_SCHEDULE = [0.9, 0.7, 0.5, 0.3, 0.1, 0.0]  # Gradual reduction to no shield
-REWARD_THRESHOLDS = [0.0, 0.2, 0.4, 0.6, 0.75, 0.85]  # Performance thresholds for transitions
+# Timesteps at which each shield-reduction transition fires
+TIMESTEP_SCHEDULE = [1_000_000, 2_000_000, 3_000_000, 4_000_000]
+# delta values applied at each corresponding timestep (decreasing protection)
+DELTA_SCHEDULE = [0.8, 0.6, 0.4, 0.2]
 
 # ignore_prob schedule (probability of ignoring shield actions) and its fixed delta
-IGNORE_PROB_SCHEDULE = [0.0, 0.1, 0.3, 0.5, 0.7, 1.0]  # Gradual increase in ignoring probability
+IGNORE_PROB_SCHEDULE = [0.2, 0.4, 0.6, 0.8]  # Gradual increase in ignoring probability
 IGNORE_PROB_DELTA = 0.9  # Fixed delta value used for DeltaShield when mechanism='ignore_prob'
 
 # Shield mechanism selection
@@ -343,8 +345,7 @@ def train_environment(env_name: str):
         shield_callback = GradualShieldReductionCallback(
             mechanism="delta",
             delta_schedule=DELTA_SCHEDULE,
-            reward_thresholds=REWARD_THRESHOLDS,
-            nr_episodes=100,
+            timestep_schedule=TIMESTEP_SCHEDULE,
             verbose=1,
         )
     else:  # ignore_prob
@@ -352,8 +353,7 @@ def train_environment(env_name: str):
             mechanism="ignore_prob",
             ignore_prob_schedule=IGNORE_PROB_SCHEDULE,
             ignore_prob_delta=IGNORE_PROB_DELTA,
-            reward_thresholds=REWARD_THRESHOLDS,
-            nr_episodes=100,
+            timestep_schedule=TIMESTEP_SCHEDULE,
             verbose=1,
         )
     
