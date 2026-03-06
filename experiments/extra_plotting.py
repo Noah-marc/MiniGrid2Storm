@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 
 # Environments to look for in the output directory
@@ -50,30 +51,30 @@ def plot_training_comparison(dir_name: str) -> None:
         print(f"No usable training data found in {base_dir}.")
         return
 
-    # ------------------------------------------------------------------
-    # Create one plot per environment
-    # ------------------------------------------------------------------
-    for env_name in KNOWN_ENVS:
-        if env_name not in data:
-            print(f"No data for {env_name}, skipping.")
-            continue
+    envs_present = [env for env in KNOWN_ENVS if env in data]
+    n_envs = len(envs_present)
 
+    fig, axes = plt.subplots(1, n_envs, figsize=(6 * n_envs, 5), sharey=True)
+    if n_envs == 1:
+        axes = [axes]
+
+    for ax, env_name in zip(axes, envs_present):
         versions = data[env_name]
-        fig, ax = plt.subplots(figsize=(10, 6))
-
-        for version_label, (timesteps, ep_rew_mean) in sorted(versions.items()):
+        for version_label, (timesteps, ep_rew_mean, _) in sorted(versions.items()):
             ax.plot(timesteps, ep_rew_mean, label=version_label, linewidth=1.5)
-
+        ax.set_title(env_name)
         ax.set_xlabel("Total Timesteps")
-        ax.set_ylabel("Mean Episode Reward (last 100 episodes)")
-        ax.set_title(f"{env_name} — Training Comparison")
-        ax.legend(loc="best")
         ax.grid(True, alpha=0.3)
+        ax.legend(loc="best", fontsize=8)
 
-        output_path = base_dir / f"{env_name}_training_comparison.png"
-        fig.savefig(output_path, dpi=150, bbox_inches="tight")
-        plt.close(fig)
-        print(f"Saved: {output_path}")
+    axes[0].set_ylabel("Mean Episode Reward (last 100 episodes)")
+    fig.suptitle("Training Comparison", fontsize=13)
+    fig.tight_layout()
+
+    output_path = base_dir / "training_comparison.png"
+    fig.savefig(output_path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    print(f"Saved: {output_path}")
 
 def _collect_data(dir_name: str) -> tuple[Path, dict[str, dict[str, tuple]]]:
     """Shared data-collection logic used by both plotting functions.
@@ -125,7 +126,25 @@ def _collect_data(dir_name: str) -> tuple[Path, dict[str, dict[str, tuple]]]:
         timesteps = df["time/total_timesteps"].to_numpy()
         ep_rew_mean = df["rollout/ep_rew_mean"].to_numpy()
 
-        data.setdefault(env_name, {})[version_label] = (timesteps, ep_rew_mean)
+        # Extract shield events from optional columns
+        events: list[tuple[int, str | None]] = []
+        if "shield_cutoff_timestep" in df.columns:
+            cutoff = df["shield_cutoff_timestep"].dropna()
+            if not cutoff.empty:
+                events.append((int(cutoff.iloc[0]), None))
+        elif "shield/transition_timestep" in df.columns:
+            trans_rows = df[df["shield/transition_timestep"].notna()]
+            for _, row in trans_rows.iterrows():
+                ts = int(row["shield/transition_timestep"])
+                if "shield/delta" in df.columns:
+                    annotation = f"δ={row['shield/delta']}"
+                elif "shield/ignore_prob" in df.columns:
+                    annotation = f"p={row['shield/ignore_prob']}"
+                else:
+                    annotation = None
+                events.append((ts, annotation))
+
+        data.setdefault(env_name, {})[version_label] = (timesteps, ep_rew_mean, events)
 
     return base_dir, data
 
@@ -155,45 +174,96 @@ def plot_training_comparison_subplots(dir_name: str) -> None:
         print(f"No usable training data found in {base_dir}.")
         return
 
-    for env_name in KNOWN_ENVS:
-        if env_name not in data:
-            print(f"No data for {env_name}, skipping.")
-            continue
+    # Map version-label substrings to (linestyle, legend_label)
+    VLINE_STYLE = {
+        "instant_turn_off": ((0, (1, 0)), "Shield disabled"),
+        "delta":            ((0, (4, 2)), "δ changed"),
+        "ignore_prob":      ((0, (4, 2)), "Ignore prob. changed"),
+    }
 
-        versions = dict(sorted(data[env_name].items()))
-        n_versions = len(versions)
+    envs_present = [env for env in KNOWN_ENVS if env in data]
+    n_envs = len(envs_present)
 
-        fig, axes = plt.subplots(
-            1,
-            n_versions,
-            figsize=(5 * n_versions, 5),
-            sharey=True,
-        )
+    # Determine the superset of version labels (columns) in sorted order
+    all_versions = sorted({v for env in envs_present for v in data[env]})
+    n_versions = len(all_versions)
 
-        # Make axes always iterable even for a single subplot
-        if n_versions == 1:
-            axes = [axes]
+    fig, axes = plt.subplots(
+        n_envs,
+        n_versions,
+        figsize=(5 * n_versions, 4 * n_envs),
+        sharey="row",
+        squeeze=False,
+    )
 
-        for ax, (version_label, (timesteps, ep_rew_mean)) in zip(axes, versions.items()):
-            ax.plot(timesteps, ep_rew_mean, linewidth=1.5)
-            ax.set_title(version_label, fontsize=9)
-            ax.set_xlabel("Total Timesteps")
+    for row, env_name in enumerate(envs_present):
+        versions = data[env_name]
+        for col, version_label in enumerate(all_versions):
+            ax = axes[row][col]
+            ts_arr, rew_arr = None, None
+            events = []
+            if version_label in versions:
+                ts_arr, rew_arr, events = versions[version_label]
+                ax.plot(ts_arr, rew_arr, linewidth=1.5)
+
+            # Determine vline style from version label
+            linestyle: tuple = (0, (4, 2))
+            legend_label = "Event"
+            for key, (ls, lbl) in VLINE_STYLE.items():
+                if key in version_label:
+                    linestyle, legend_label = ls, lbl
+                    break
+
+            # Draw vertical event lines and collect legend handles
+            legend_handles = []
+            handle = None
+            for ts, annotation in events:
+                line = ax.axvline(x=ts, color="red", linestyle=linestyle,
+                                  alpha=0.8, linewidth=1.2)
+                if handle is None:
+                    handle = line
+                if annotation is not None:
+                    # Place label in whichever half (upper/lower) has less data near this vline.
+                    # Use a window of ±5 % of the x-range for robustness.
+                    if ts_arr is not None and len(ts_arr) > 0:
+                        y_min, y_max = rew_arr.min(), rew_arr.max()
+                        y_range = y_max - y_min if y_max > y_min else 1.0
+                        x_window = (ts_arr[-1] - ts_arr[0]) * 0.05
+                        mask = np.abs(ts_arr - ts) <= x_window
+                        window_vals = rew_arr[mask] if mask.any() else rew_arr[np.argmin(np.abs(ts_arr - ts)):np.argmin(np.abs(ts_arr - ts))+1]
+                        data_y_norm = float((window_vals.mean() - y_min) / y_range)
+                        text_y = 0.20 if data_y_norm > 0.5 else 0.75
+                    else:
+                        text_y = 0.35
+                    ax.text(ts, text_y, f" {annotation}", transform=ax.get_xaxis_transform(),
+                            color="red", fontsize=7, ha="left", va="center")
+            if handle is not None:
+                handle.set_label(legend_label)
+                legend_handles.append(handle)
+
+            if legend_handles:
+                ax.legend(handles=legend_handles, fontsize=7, loc="lower right")
+
             ax.grid(True, alpha=0.3)
+            ax.set_xlabel("Total Timesteps")
+            if col == 0:
+                ax.set_ylabel(f"{env_name}\nMean Ep. Reward")
+            if row == 0:
+                ax.set_title(version_label, fontsize=9)
 
-        axes[0].set_ylabel("Mean Episode Reward (last 100 episodes)")
-        fig.suptitle(f"{env_name} — Training Comparison (subplots)", fontsize=12)
-        fig.tight_layout()
+    fig.suptitle("Training Comparison (subplots)", fontsize=13)
+    fig.tight_layout()
 
-        output_path = base_dir / f"{env_name}_training_comparison_subplots.png"
-        fig.savefig(output_path, dpi=150, bbox_inches="tight")
-        plt.close(fig)
-        print(f"Saved: {output_path}")
+    output_path = base_dir / "training_comparison_subplots.png"
+    fig.savefig(output_path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    print(f"Saved: {output_path}")
 
 
 def main():
     # In case that this script is run directly, generate the training comparison plot for a directory.
-    plot_training_comparison("1.0")
-    plot_training_comparison_subplots("1.0")
+    plot_training_comparison("05_March_14:18")
+    plot_training_comparison_subplots("05_March_14:18")
 
 if __name__ == "__main__":
     main()
