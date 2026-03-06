@@ -92,8 +92,8 @@ SHIELD_DISABLE_TIMESTEP = 2_500_000  # Disable shield at this timestep
 def plot_training_results(log_dir: Path, env_name: str, output_path: Path, shield_disable_timestep: int = None):
     """Load training results and create performance plots."""
     try:
-        # Read shield_instant_turn_off.csv from PPO logger
-        progress_file = log_dir / "shield_instant_turn_off.csv"
+        # Read progress.csv from PPO logger
+        progress_file = log_dir / "progress.csv"
         df = pd.read_csv(progress_file)
         
         fig, axes = plt.subplots(2, 2, figsize=(14, 10))
@@ -250,7 +250,7 @@ def train_environment(env_name: str):
     )
     
     # Configure logging with descriptive CSV filename
-    csv_logger = CSVOutputFormat(str(log_dir / "shield_instant_turn_off.csv"))
+    csv_logger = CSVOutputFormat(str(log_dir / "progress.csv"))
     human_logger = HumanOutputFormat(sys.stdout)
     ppo_logger = configure(folder=None, format_strings=[])
     ppo_logger.output_formats = [human_logger, csv_logger]

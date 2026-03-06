@@ -82,8 +82,8 @@ VIDEO_LENGTH = 200  # Max frames per clip
 def plot_training_results(log_dir: Path, env_name: str, output_path: Path):
     """Load training results and create performance plots."""
     try:
-        # Read unshield.csv from PPO logger
-        progress_file = log_dir / "unshield.csv"
+        # Read progress.csv from PPO logger
+        progress_file = log_dir / "progress.csv"
         df = pd.read_csv(progress_file)
         
         fig, axes = plt.subplots(2, 2, figsize=(14, 10))
@@ -205,7 +205,7 @@ def train_environment(env_name: str):
     )
     
     # Configure logging with descriptive CSV filename
-    csv_logger = CSVOutputFormat(str(log_dir / "unshield.csv"))
+    csv_logger = CSVOutputFormat(str(log_dir / "progress.csv"))
     human_logger = HumanOutputFormat(sys.stdout)
     ppo_logger = configure(folder=None, format_strings=[])
     ppo_logger.output_formats = [human_logger, csv_logger]

@@ -110,9 +110,8 @@ VIDEO_LENGTH = 200  # Max frames per clip
 def plot_training_results(log_dir: Path, env_name: str, output_path: Path, shield_disable_timestep=None):
     """Load training results and create performance plots."""
     try:
-        # Read shield_gradual_reduction CSV from PPO logger
-        csv_filename = f"shield_gradual_reduction_{SHIELD_MECHANISM}.csv"
-        progress_file = log_dir / csv_filename
+        # Read progress.csv from PPO logger
+        progress_file = log_dir / "progress.csv"
         df = pd.read_csv(progress_file)
         
         # Create performance plot (2x2)
@@ -321,9 +320,8 @@ def train_environment(env_name: str):
         features_extractor_kwargs=dict(features_dim=FEATURES_DIM),
     )
     
-    # Configure logging with descriptive CSV filename
-    csv_filename = f"shield_gradual_reduction_{SHIELD_MECHANISM}.csv"
-    csv_logger = CSVOutputFormat(str(log_dir / csv_filename))
+    # Configure logging
+    csv_logger = CSVOutputFormat(str(log_dir / "progress.csv"))
     human_logger = HumanOutputFormat(sys.stdout)
     ppo_logger = configure(folder=None, format_strings=[])
     ppo_logger.output_formats = [human_logger, csv_logger]
