@@ -25,13 +25,19 @@ class ShieldHardCutoffCallback(BaseCallback):
     def __init__(
         self,
         cutoff_timestep: int = 2_500_000,
+        shield_delta: float = None,
         verbose: int = 1,
     ):
         super().__init__(verbose)
         self.cutoff_timestep = cutoff_timestep
+        self.shield_delta = shield_delta
 
         self.shield_active = True
         self.actual_cutoff_timestep = None
+
+    def _on_training_start(self) -> None:
+        if self.shield_delta is not None:
+            self.logger.record("shield/constant_delta", self.shield_delta)
 
     def _on_step(self) -> bool:
         """
@@ -73,6 +79,7 @@ class GradualShieldReductionCallback(BaseCallback):
 
     def __init__(self,
                  mechanism: str = "delta",
+                 initial_delta: float = None,
                  delta_schedule: list[float] = None,
                  ignore_prob_schedule: list[float] = None,
                  ignore_prob_delta: float = None,
@@ -107,6 +114,7 @@ class GradualShieldReductionCallback(BaseCallback):
         self.ignore_prob_schedule = ignore_prob_schedule
         self.ignore_prob_delta = ignore_prob_delta
         self.timestep_schedule = [int(t) for t in timestep_schedule]
+        self.initial_delta = initial_delta if mechanism == "delta" else None
 
         # Use appropriate schedule based on mechanism
         self.active_schedule = delta_schedule if mechanism == "delta" else ignore_prob_schedule
@@ -114,6 +122,12 @@ class GradualShieldReductionCallback(BaseCallback):
         # State tracking: current_stage is the index of the next scheduled transition
         self.current_stage = 0
         self.stage_transitions = []  # Track when each transition happened
+
+    def _on_training_start(self) -> None:
+        if self.mechanism == "delta" and self.initial_delta is not None:
+            self.logger.record("shield/initial_delta", self.initial_delta)
+        elif self.mechanism == "ignore_prob" and self.ignore_prob_delta is not None:
+            self.logger.record("shield/constant_delta", self.ignore_prob_delta)
 
         if self.verbose > 0:
             print(f"\nGRADUAL SHIELD REDUCTION SCHEDULE ({mechanism.upper()}):")

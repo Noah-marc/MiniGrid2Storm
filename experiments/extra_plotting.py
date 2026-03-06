@@ -60,7 +60,7 @@ def plot_training_comparison(dir_name: str) -> None:
 
     for ax, env_name in zip(axes, envs_present):
         versions = data[env_name]
-        for version_label, (timesteps, ep_rew_mean, _) in sorted(versions.items()):
+        for version_label, (timesteps, ep_rew_mean, _, _) in sorted(versions.items()):
             ax.plot(timesteps, ep_rew_mean, label=version_label, linewidth=1.5)
         ax.set_title(env_name)
         ax.set_xlabel("Total Timesteps")
@@ -128,6 +128,7 @@ def _collect_data(dir_name: str) -> tuple[Path, dict[str, dict[str, tuple]]]:
 
         # Extract shield events from optional columns
         events: list[tuple[int, str | None]] = []
+        initial_annot: str | None = None
         if "shield_cutoff_timestep" in df.columns:
             cutoff = df["shield_cutoff_timestep"].dropna()
             if not cutoff.empty:
@@ -144,7 +145,17 @@ def _collect_data(dir_name: str) -> tuple[Path, dict[str, dict[str, tuple]]]:
                     annotation = None
                 events.append((ts, annotation))
 
-        data.setdefault(env_name, {})[version_label] = (timesteps, ep_rew_mean, events)
+        # Extract initial / constant delta annotation
+        if "shield/initial_delta" in df.columns:
+            v = df["shield/initial_delta"].dropna()
+            if not v.empty:
+                initial_annot = f"δ={v.iloc[0]} (init.)"
+        elif "shield/constant_delta" in df.columns:
+            v = df["shield/constant_delta"].dropna()
+            if not v.empty:
+                initial_annot = f"δ={v.iloc[0]}"
+
+        data.setdefault(env_name, {})[version_label] = (timesteps, ep_rew_mean, events, initial_annot)
 
     return base_dir, data
 
@@ -174,6 +185,13 @@ def plot_training_comparison_subplots(dir_name: str) -> None:
         print(f"No usable training data found in {base_dir}.")
         return
 
+    # Fallback initial/constant delta annotations for data that predates CSV logging
+    CONST_DELTA_FALLBACK = {
+        "instant_turn_off": "δ=0.5",
+        "ignore_prob":      "δ=0.9 (const.)",
+        "delta":            "δ=0.9 (init.)",
+    }
+
     # Map version-label substrings to (linestyle, legend_label)
     VLINE_STYLE = {
         "instant_turn_off": ((0, (1, 0)), "Shield disabled"),
@@ -202,9 +220,24 @@ def plot_training_comparison_subplots(dir_name: str) -> None:
             ax = axes[row][col]
             ts_arr, rew_arr = None, None
             events = []
+            initial_annot = None
             if version_label in versions:
-                ts_arr, rew_arr, events = versions[version_label]
+                ts_arr, rew_arr, events, initial_annot = versions[version_label]
                 ax.plot(ts_arr, rew_arr, linewidth=1.5)
+
+            # Fallback initial/constant annotation if not logged in CSV
+            if initial_annot is None:
+                for key, fallback in CONST_DELTA_FALLBACK.items():
+                    if key in version_label:
+                        initial_annot = fallback
+                        break
+
+            # Show initial/constant delta in the upper-left corner
+            if initial_annot is not None:
+                ax.text(0.03, 0.96, initial_annot, transform=ax.transAxes,
+                        color="red", fontsize=7, ha="left", va="top",
+                        bbox=dict(boxstyle="round,pad=0.2", facecolor="white",
+                                  edgecolor="lightgrey", alpha=0.8))
 
             # Determine vline style from version label
             linestyle: tuple = (0, (4, 2))
