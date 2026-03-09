@@ -130,11 +130,11 @@ class GradualShieldReductionCallback(BaseCallback):
             self.logger.record("shield/constant_delta", self.ignore_prob_delta)
 
         if self.verbose > 0:
-            print(f"\nGRADUAL SHIELD REDUCTION SCHEDULE ({mechanism.upper()}):")
-            if mechanism == "ignore_prob":
-                print(f"   Fixed δ={ignore_prob_delta:.2f} throughout (only ignore_prob varies)")
+            print(f"\nGRADUAL SHIELD REDUCTION SCHEDULE ({self.mechanism.upper()}):")
+            if self.mechanism == "ignore_prob":
+                print(f"   Fixed δ={self.ignore_prob_delta:.2f} throughout (only ignore_prob varies)")
             for i, (value, ts) in enumerate(zip(self.active_schedule, self.timestep_schedule)):
-                if mechanism == "delta":
+                if self.mechanism == "delta":
                     print(f"   Stage {i}: δ={value:.2f} at timestep {ts:,}")
                 else:
                     print(f"   Stage {i}: ignore_prob={value:.2f} at timestep {ts:,}")
