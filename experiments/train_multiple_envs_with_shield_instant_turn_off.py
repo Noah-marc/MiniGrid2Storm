@@ -72,8 +72,7 @@ BATCH_SIZE = 256  # Batch size for PPO
 # Timesteps at which to record a clip (total training timesteps, not vectorized steps)
 RECORDING_TIMESTEPS = [
     500,          # Very beginning
-    245_000,      # Just before shield disable (250K)
-    255_000,      # Just after shield disable (250K)
+    251_000,      # 1K after shield disable (250K)
     500_000,      # End
 ]
 VIDEO_LENGTH = 200  # Max frames per clip

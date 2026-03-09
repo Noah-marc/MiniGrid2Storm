@@ -56,10 +56,10 @@ INITIAL_DELTA = 0.9  # Start with high protection (used for mechanism='delta')
 # Timesteps at which each shield-reduction transition fires
 TIMESTEP_SCHEDULE = [100_000, 200_000, 300_000, 400_000]
 # delta values applied at each corresponding timestep (decreasing protection)
-DELTA_SCHEDULE = [0.8, 0.6, 0.4, 0.2]
+DELTA_SCHEDULE = [0.75, 0.5, 0.25, 0.0]  # 0.0 = shield fully disabled (delta*act_val always <= optimal)
 
 # ignore_prob schedule (probability of ignoring shield actions) and its fixed delta
-IGNORE_PROB_SCHEDULE = [0.2, 0.4, 0.6, 0.8]  # Gradual increase in ignoring probability
+IGNORE_PROB_SCHEDULE = [0.25, 0.5, 0.75, 1]  # Gradual increase in ignoring probability
 IGNORE_PROB_DELTA = 0.9  # Fixed delta value used for DeltaShield when mechanism='ignore_prob'
 
 # Shield mechanism selection
@@ -88,14 +88,10 @@ BATCH_SIZE = 256  # Batch size for PPO
 # Timesteps at which to record a clip (total training timesteps, not vectorized steps)
 RECORDING_TIMESTEPS = [
     500,          # Very beginning
-    95_000,       # Just before 1st transition (100K)
-    105_000,      # Just after 1st transition (100K)
-    195_000,      # Just before 2nd transition (200K)
-    205_000,      # Just after 2nd transition (200K)
-    295_000,      # Just before 3rd transition (300K)
-    305_000,      # Just after 3rd transition (300K)
-    395_000,      # Just before 4th transition (400K)
-    405_000,      # Just after 4th transition (400K)
+    101_000,      # 1K after 1st transition (100K)
+    201_000,      # 1K after 2nd transition (200K)
+    301_000,      # 1K after 3rd transition (300K)
+    401_000,      # 1K after 4th transition (400K)
     500_000,      # End
 ]
 VIDEO_LENGTH = 200  # Max frames per clip
