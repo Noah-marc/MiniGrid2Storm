@@ -33,7 +33,7 @@ import torch.nn as nn
 from stable_baselines3 import PPO
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 from stable_baselines3.common.logger import configure, CSVOutputFormat, HumanOutputFormat
-from stable_baselines3.common.vec_env import DummyVecEnv, VecMonitor, VecVideoRecorder
+from stable_baselines3.common.vec_env import VecMonitor, VecVideoRecorder
 from stable_baselines3.common.callbacks import BaseCallback
 from minigrid.wrappers import ImgObsWrapper, ReseedWrapper
 import matplotlib.pyplot as plt
@@ -49,7 +49,7 @@ from probabilistic_minigrids import ProbabilisticEnvWrapper
 from collections import deque
 from feature_extractor import MinigridFeaturesExtractor
 from callbacks import GradualShieldReductionCallback
-from train_utils import make_video_trigger, save_env_image
+from train_utils import make_video_trigger, save_env_image, DummyVecEnvRenderSubset
 
 # Shield configuration - gradual reduction schedule
 INITIAL_DELTA = 0.9  # Start with high protection (used for mechanism='delta')
@@ -290,7 +290,7 @@ def train_environment(env_name: str):
         return env
     
     # Create vectorized environment
-    env = DummyVecEnv([make_env for _ in range(NUM_ENVS)])
+    env = DummyVecEnvRenderSubset([make_env for _ in range(NUM_ENVS)], num_env_render=1)
     
     # Add monitoring to track episode statistics for logging
     env = VecMonitor(env, filename=str(log_dir / "monitor"))

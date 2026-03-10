@@ -3,8 +3,35 @@ Training utilities for MiniGrid experiments.
 This module contains common utility functions shared across training scripts.
 """
 
+import warnings
+from typing import Callable, Optional
+from collections.abc import Sequence
 from pathlib import Path
+
+import numpy as np
+import gymnasium as gym
 from PIL import Image
+from stable_baselines3.common.vec_env import DummyVecEnv
+
+
+class DummyVecEnvRenderSubset(DummyVecEnv):
+    """DummyVecEnv that renders only the first `num_env_render` environments."""
+
+    def __init__(self, env_fns: list[Callable[[], gym.Env]], num_env_render: int = 1):
+        super().__init__(env_fns)
+        assert num_env_render <= len(env_fns), (
+            f"num_env_render ({num_env_render}) must be <= number of envs ({len(env_fns)})"
+        )
+        self.num_env_render = num_env_render
+
+    def get_images(self) -> Sequence[Optional[np.ndarray]]:
+        if self.render_mode != "rgb_array":
+            warnings.warn(
+                f"The render mode is {self.render_mode}, but this method assumes "
+                "it is `rgb_array` to obtain images."
+            )
+            return [None for _ in self.envs[: self.num_env_render]]
+        return [env.render() for env in self.envs[: self.num_env_render]]  # type: ignore[misc]
 
 
 def make_video_trigger(recording_timesteps: list, num_envs: int):

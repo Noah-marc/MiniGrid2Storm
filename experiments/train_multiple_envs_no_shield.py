@@ -27,7 +27,7 @@ import torch.nn as nn
 from stable_baselines3 import PPO
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 from stable_baselines3.common.logger import configure, CSVOutputFormat, HumanOutputFormat
-from stable_baselines3.common.vec_env import DummyVecEnv, VecMonitor, VecVideoRecorder
+from stable_baselines3.common.vec_env import VecMonitor, VecVideoRecorder
 from minigrid.wrappers import ImgObsWrapper, ReseedWrapper
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -38,7 +38,7 @@ from PIL import Image
 
 from envs.registry import register_env
 from feature_extractor import MinigridFeaturesExtractor
-from train_utils import make_video_trigger, save_env_image
+from train_utils import make_video_trigger, save_env_image, DummyVecEnvRenderSubset
 
 # Define output directory (relative to script dir)
 OUTPUT_DIR = script_dir / "output" / OUTPUT_DIR_ARG / "unshielded"
@@ -171,7 +171,7 @@ def train_environment(env_name: str):
         return env
     
     # Create vectorized environment
-    env = DummyVecEnv([make_env for _ in range(NUM_ENVS)])
+    env = DummyVecEnvRenderSubset([make_env for _ in range(NUM_ENVS)], num_env_render=1)
     
     # Add monitoring to track episode statistics for logging
     env = VecMonitor(env, filename=str(log_dir / "monitor"))
@@ -185,7 +185,7 @@ def train_environment(env_name: str):
         name_prefix=env_name,
     )
     
-    print(f"   {NUM_ENVS} environments created and wrapped in DummyVecEnv with VecMonitor")
+    print(f"   {NUM_ENVS} environments created and wrapped in DummyVecEnvRenderSubset with VecMonitor")
     
     # Save environment image (using first environment from the vectorized env)
     print(f"\n2. Saving environment image...")

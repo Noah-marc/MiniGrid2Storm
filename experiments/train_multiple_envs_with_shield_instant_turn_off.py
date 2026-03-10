@@ -30,7 +30,7 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 from stable_baselines3.common.logger import configure, CSVOutputFormat, HumanOutputFormat
 from stable_baselines3.common.callbacks import BaseCallback
-from stable_baselines3.common.vec_env import DummyVecEnv, VecMonitor, VecVideoRecorder
+from stable_baselines3.common.vec_env import VecMonitor, VecVideoRecorder
 from minigrid.wrappers import ImgObsWrapper, ReseedWrapper
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -45,7 +45,7 @@ from probabilistic_minigrids import ProbabilisticEnvWrapper
 from collections import deque
 from feature_extractor import MinigridFeaturesExtractor
 from callbacks import ShieldHardCutoffCallback
-from train_utils import make_video_trigger, save_env_image
+from train_utils import make_video_trigger, save_env_image, DummyVecEnvRenderSubset
 
 # Define output directory (relative to script dir)
 OUTPUT_DIR = script_dir / "output" / OUTPUT_DIR_ARG / "shielded_instant_turn_off"
@@ -217,7 +217,7 @@ def train_environment(env_name: str):
         return env
     
     # Create vectorized environment
-    env = DummyVecEnv([make_env for _ in range(NUM_ENVS)])
+    env = DummyVecEnvRenderSubset([make_env for _ in range(NUM_ENVS)], num_env_render=1)
     
     # Add monitoring to track episode statistics for logging
     env = VecMonitor(env, filename=str(log_dir / "monitor"))
