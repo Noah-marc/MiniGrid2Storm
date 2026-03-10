@@ -295,8 +295,8 @@ def plot_training_comparison_subplots(dir_name: str) -> None:
 
 def main():
     # In case that this script is run directly, generate the training comparison plot for a directory.
-    plot_training_comparison("09_March_16:06")
-    plot_training_comparison_subplots("09_March_16:06")
+    plot_training_comparison("10_March_12:54")
+    plot_training_comparison_subplots("10_March_12:54")
 
 if __name__ == "__main__":
     main()
