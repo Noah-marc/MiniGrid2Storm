@@ -39,11 +39,30 @@ class ShieldHardCutoffCallback(BaseCallback):
         if self.shield_delta is not None:
             self.logger.record("shield/constant_delta", self.shield_delta)
 
+    def _log_shield_stats(self) -> None:
+        """Sum blocked/allowed/ignored action counts across all envs and log them."""
+        total_blocked = 0
+        total_allowed = 0
+        total_ignored = 0
+        for i in range(self.training_env.num_envs):
+            env = self.training_env.envs[i]
+            while hasattr(env, 'env') and not isinstance(env, ProbabilisticEnvWrapper):
+                env = env.env
+            if isinstance(env, ProbabilisticEnvWrapper) and env.shield is not None:
+                total_blocked += env.shield.blocked
+                total_allowed += env.shield.not_blocked
+                total_ignored += getattr(env.shield, 'block_ignored', 0)
+        self.logger.record("shield/actions_blocked", total_blocked)
+        self.logger.record("shield/actions_allowed", total_allowed)
+        self.logger.record("shield/actions_block_ignored", total_ignored)
+
     def _on_step(self) -> bool:
         """
         Called at every environment step.
         """
         if self.shield_active and self.num_timesteps >= self.cutoff_timestep:
+            # Log final shield stats before disabling
+            self._log_shield_stats()
             # Access all environments in the vectorized wrapper and disable shields
             vec_env = self.training_env
             for i in range(vec_env.num_envs):
@@ -67,6 +86,9 @@ class ShieldHardCutoffCallback(BaseCallback):
                 print(f"   Scheduled cutoff at: {self.cutoff_timestep}")
                 print(f"   Continuing training without shield...")
                 print(f"{'='*80}\n")
+
+        elif self.shield_active:
+            self._log_shield_stats()
 
         return True
 
@@ -140,6 +162,23 @@ class GradualShieldReductionCallback(BaseCallback):
                     print(f"   Stage {i}: ignore_prob={value:.2f} at timestep {ts:,}")
             print()
     
+    def _log_shield_stats(self) -> None:
+        """Sum blocked/allowed/ignored action counts across all envs and log them."""
+        total_blocked = 0
+        total_allowed = 0
+        total_ignored = 0
+        for i in range(self.training_env.num_envs):
+            env = self.training_env.envs[i]
+            while hasattr(env, 'env') and not isinstance(env, ProbabilisticEnvWrapper):
+                env = env.env
+            if isinstance(env, ProbabilisticEnvWrapper) and env.shield is not None:
+                total_blocked += env.shield.blocked
+                total_allowed += env.shield.not_blocked
+                total_ignored += getattr(env.shield, 'block_ignored', 0)
+        self.logger.record("shield/actions_blocked", total_blocked)
+        self.logger.record("shield/actions_allowed", total_allowed)
+        self.logger.record("shield/actions_block_ignored", total_ignored)
+
     def _on_step(self) -> bool:
         """
         Called at every environment step. Transitions to the next shield stage when the
@@ -151,6 +190,7 @@ class GradualShieldReductionCallback(BaseCallback):
             else:
                 break
 
+        self._log_shield_stats()
         return True  # Continue training
     
     def _transition_to_stage(self, stage: int):
