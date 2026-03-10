@@ -54,7 +54,7 @@ from train_utils import make_video_trigger, save_env_image, DummyVecEnvRenderSub
 # Shield configuration - gradual reduction schedule
 INITIAL_DELTA = 0.9  # Start with high protection (used for mechanism='delta')
 # Timesteps at which each shield-reduction transition fires
-TIMESTEP_SCHEDULE = [100_000, 200_000, 300_000, 400_000]
+TIMESTEP_SCHEDULE = [1_000_000, 2_000_000, 3_000_000, 4_000_000]
 # delta values applied at each corresponding timestep (decreasing protection)
 DELTA_SCHEDULE = [0.75, 0.5, 0.25, 0.0]  # 0.0 = shield fully disabled (delta*act_val always <= optimal)
 
@@ -78,7 +78,7 @@ GOAL_STATE_ENVS = [
 ]
 
 # Training configuration
-TOTAL_TIMESTEPS = 500_000  # 5e5
+TOTAL_TIMESTEPS = 5_000_000  # 5e6
 FEATURES_DIM = 128
 FIXED_SEED = 42
 NUM_ENVS = 24  # Number of parallel environments
@@ -87,14 +87,14 @@ BATCH_SIZE = 256  # Batch size for PPO
 # Video recording configuration
 # Timesteps at which to record a clip (total training timesteps, not vectorized steps)
 RECORDING_TIMESTEPS = [
-    500,          # Very beginning
-    101_000,      # 1K after 1st transition (100K)
-    201_000,      # 1K after 2nd transition (200K)
-    301_000,      # 1K after 3rd transition (300K)
-    401_000,      # 1K after 4th transition (400K)
-    500_000,      # End
+    500,              # Very beginning
+    1_001_000,        # 1K after 1st transition (1M)
+    2_001_000,        # 1K after 2nd transition (2M)
+    3_001_000,        # 1K after 3rd transition (3M)
+    4_001_000,        # 1K after 4th transition (4M)
+    5_000_000,        # End
 ]
-VIDEO_LENGTH = 200  # Max frames per clip
+VIDEO_LENGTH = 500  # Max frames per clip
 
 
 

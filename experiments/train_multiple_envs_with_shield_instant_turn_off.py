@@ -62,7 +62,7 @@ GOAL_STATE_ENVS = [
 ]
 
 # Training configuration
-TOTAL_TIMESTEPS = 500_000  # 5e5
+TOTAL_TIMESTEPS = 5_000_000  # 5e6
 FEATURES_DIM = 128
 FIXED_SEED = 42
 NUM_ENVS = 24  # Number of parallel environments
@@ -71,13 +71,13 @@ BATCH_SIZE = 256  # Batch size for PPO
 # Video recording configuration
 # Timesteps at which to record a clip (total training timesteps, not vectorized steps)
 RECORDING_TIMESTEPS = [
-    500,          # Very beginning
-    251_000,      # 1K after shield disable (250K)
-    500_000,      # End
+    500,              # Very beginning
+    2_501_000,        # 1K after shield disable (2.5M)
+    5_000_000,        # End
 ]
-VIDEO_LENGTH = 200  # Max frames per clip
-SHIELD_DELTA = 0.8  # Delta parameter for DeltaShield
-SHIELD_DISABLE_TIMESTEP = 250_000  # Disable shield at this timestep
+VIDEO_LENGTH = 500  # Max frames per clip
+SHIELD_DELTA = 0.9  # Delta parameter for DeltaShield
+SHIELD_DISABLE_TIMESTEP = 2_500_000  # Disable shield at this timestep
 
 
 
