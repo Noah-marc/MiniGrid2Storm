@@ -271,6 +271,8 @@ def train_environment(env_name: str):
     print(f"\n1. Setting up {NUM_ENVS} environments...")
     register_env(f"./envs/configs/goal_state/{env_name}.yaml")
     
+    _num_states_printed = [False]
+
     def make_env():
         env = gym.make(f"{env_name}-v0")
         env = ImgObsWrapper(env)
@@ -283,8 +285,11 @@ def train_environment(env_name: str):
         #   - 'ignore_prob': delta stays fixed at IGNORE_PROB_DELTA; only ignore_prob varies.
         initial_delta = INITIAL_DELTA if SHIELD_MECHANISM == "delta" else IGNORE_PROB_DELTA
         env.reset()
-        model, _ = env.unwrapped.convert_to_probabilistic_storm()
-        shield = DeltaShield(model, "Pmin=? [F \"lava\"]", delta=initial_delta)
+        storm_model, visited_envs = env.unwrapped.convert_to_probabilistic_storm()
+        if not _num_states_printed[0]:
+            print(f"   Stormvogel model has {len(visited_envs)} states.")
+            _num_states_printed[0] = True
+        shield = DeltaShield(storm_model, "Pmin=? [F \"lava\"]", delta=initial_delta)
         env.unwrapped.set_shield(shield)
 
         return env
