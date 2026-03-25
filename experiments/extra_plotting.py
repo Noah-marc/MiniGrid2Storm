@@ -187,7 +187,7 @@ def plot_training_comparison_subplots(dir_name: str) -> None:
 
     # Fallback initial/constant delta annotations for data that predates CSV logging
     CONST_DELTA_FALLBACK = {
-        "instant_turn_off": "δ=0.5",
+        "instant_turn_off": "δ=0.9",
         "ignore_prob":      "δ=0.9 (const.)",
         "delta":            "δ=0.9 (init.)",
     }
@@ -295,8 +295,8 @@ def plot_training_comparison_subplots(dir_name: str) -> None:
 
 def main():
     # In case that this script is run directly, generate the training comparison plot for a directory.
-    plot_training_comparison("10_March_16:47")
-    plot_training_comparison_subplots("10_March_16:47")
+    plot_training_comparison("10_March_12:54")
+    plot_training_comparison_subplots("10_March_12:54")
 
 if __name__ == "__main__":
     main()
