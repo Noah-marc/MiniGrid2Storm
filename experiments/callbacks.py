@@ -12,8 +12,8 @@ script_dir = Path(__file__).parent
 project_root = script_dir.parent
 sys.path.insert(0, str(project_root))
 
-from shield import DeltaShield
-from probabilistic_minigrids import ProbabilisticEnvWrapper
+from core.shield import DeltaShield
+from core.probabilistic_minigrids import ProbabilisticEnvWrapper
 
 
 class ShieldHardCutoffCallback(BaseCallback):

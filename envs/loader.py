@@ -4,7 +4,7 @@ Responsible for loading and wrapping environments based on configuration files.
 
 import yaml
 import importlib
-from probabilistic_minigrids import ProbabilisticEnvWrapper
+from core.probabilistic_minigrids import ProbabilisticEnvWrapper
 from minigrid.core.actions import Actions
 
 def load_config(path: str) -> dict:

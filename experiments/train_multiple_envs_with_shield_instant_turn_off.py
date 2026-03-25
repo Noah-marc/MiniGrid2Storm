@@ -40,8 +40,8 @@ import numpy as np
 from PIL import Image
 
 from envs.registry import register_env
-from shield import DeltaShield
-from probabilistic_minigrids import ProbabilisticEnvWrapper
+from core.shield import DeltaShield
+from core.probabilistic_minigrids import ProbabilisticEnvWrapper
 from collections import deque
 from feature_extractor import MinigridFeaturesExtractor
 from callbacks import ShieldHardCutoffCallback

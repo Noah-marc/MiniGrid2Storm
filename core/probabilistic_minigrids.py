@@ -7,7 +7,7 @@ import copy
 import numpy as np
 import gymnasium as gym
 
-from shield import Shield
+from core.shield import Shield
 from utils.action_utils import (
     to_stormvogel_action,
     from_stormvogel_action,
