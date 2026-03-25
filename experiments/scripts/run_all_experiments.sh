@@ -36,7 +36,7 @@ echo "Scripts dir:  $SCRIPT_DIR"
 echo "Output dir:   $OUTPUT_DIR_ARG"
 echo ""
 
-cd "$SCRIPT_DIR/.."  # Run from project root so relative paths (e.g. ./envs/configs/) resolve correctly
+cd "$SCRIPT_DIR/../.."  # Run from project root so relative paths (e.g. ./envs/configs/) resolve correctly
 
 run_experiment() {
     local name="$1"

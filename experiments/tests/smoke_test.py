@@ -5,7 +5,7 @@ that imports, environment construction, and the training loop still work
 after the core/ refactoring.
 
 Usage (from project root):
-    uv run experiments/smoke_test.py
+    uv run experiments/tests/smoke_test.py
 """
 
 import sys
@@ -13,8 +13,9 @@ from pathlib import Path
 
 # Make project root importable
 script_dir = Path(__file__).parent
-project_root = script_dir.parent
+project_root = script_dir.parent.parent
 sys.path.insert(0, str(project_root))
+sys.path.insert(0, str(project_root / "experiments" / "scripts"))
 
 # Fake the --output_dir argument expected by each training module at import time
 sys.argv = [sys.argv[0], "--output_dir", "smoke_test"]
@@ -27,7 +28,7 @@ print("\n" + "="*60)
 print("SMOKE TEST 1/3: unshielded")
 print("="*60)
 
-import experiments.train_multiple_envs_no_shield as no_shield
+import train_multiple_envs_no_shield as no_shield
 
 no_shield.TOTAL_TIMESTEPS = TIMESTEPS
 no_shield.NUM_ENVS = 1
@@ -41,7 +42,7 @@ print("\n" + "="*60)
 print("SMOKE TEST 2/3: shielded instant turn-off")
 print("="*60)
 
-import experiments.train_multiple_envs_with_shield_instant_turn_off as instant
+import train_multiple_envs_with_shield_instant_turn_off as instant
 
 instant.TOTAL_TIMESTEPS = TIMESTEPS
 instant.NUM_ENVS = 1
@@ -59,7 +60,7 @@ print("="*60)
 # Provide the extra --mechanism argument required by this module
 sys.argv = [sys.argv[0], "--mechanism", "ignore_prob", "--output_dir", "smoke_test"]
 
-import experiments.train_multiple_envs_shield_gradual_reduction as gradual
+import train_multiple_envs_shield_gradual_reduction as gradual
 
 gradual.TOTAL_TIMESTEPS = TIMESTEPS
 gradual.NUM_ENVS = 1
