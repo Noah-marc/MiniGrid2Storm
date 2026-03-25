@@ -133,7 +133,8 @@ class ProbabilisticEnvWrapper(gym.Env):
         def delta(s: str, a: bird.Action):
             """
             In init we define the inital state of the agent as the env of the probablisitc wrapper. 
-            So while theoritcially the type of s would be bird.State, it is actually a MiniGridEnv.
+            So while theoritcially the type of s would be bird.State, it is actually a hash of a MiniGridEnv. 
+            One can get the corresponding env from the visited_envs dict.
             """
             curr_env = visited_envs[s]
             curr_state = curr_env.grid.get(curr_env.agent_pos[0], curr_env.agent_pos[1])
